@@ -1,10 +1,57 @@
 [
   {
-    "id": "naperville-market",
-    "name": "Naperville Farmers Market",
-    "address": "5th Ave Station, Naperville, IL",
-    "coordinates": [-88.1473, 41.7767],
+    "id": "01",
+    "name": "Mayneland Farm",
+    "address": "27W265 Bauer Rd, Naperville, IL 60563",
+    "coordinates": [41.792461, -88.152911],
+    "daysOpen": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "hours": {
+      "open": "10:00",
+      "close": "18:00"
+    }
+  },
+  {
+    "id": "02",
+    "name": "Naperville's Farmers Market",
+    "address": "200 E 5th Ave, Naperville, IL 60563",
+    "coordinates": [41.78061, -88.14336],
     "daysOpen": ["Saturday"],
-    "hours": { "open": "07:00", "close": "12:00" }
+    "hours": {
+      "open": "07:00",
+      "close": "12:00"
+    }
+  },
+  {
+    "id": "03",
+    "name": "Farmers Market at St. Johns/Naperville",
+    "address": "750 Aurora Ave, Naperville, IL 60540",
+    "coordinates": [41.76769, -88.16025],
+    "daysOpen": ["Saturday"],
+    "hours": {
+      "open": "15:00",
+      "close": "19:00"
+    }
+  },
+  {
+    "id": "04",
+    "name": "Wheaton French Market",
+    "address": "S Main St, Wheaton, IL 60187",
+    "coordinates": [41.86407, -88.10700],
+    "daysOpen": ["Saturday"],
+    "hours": {
+      "open": "08:00",
+      "close": "14:00"
+    }
+  },
+  {
+    "id": "05",
+    "name": "Glen Ellyn French Market",
+    "address": "460 Crescent Blvd, Glen Ellyn, IL 60137",
+    "coordinates": [41.87660, -88.06919],
+    "daysOpen": ["Sunday"],
+    "hours": {
+      "open": "09:00",
+      "close": "13:00"
+    }
   }
 ]
