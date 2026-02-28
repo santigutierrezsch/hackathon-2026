@@ -1,211 +1,199 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import L from "leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import { fetchMarkets } from "../utils/api.js";
-import { computeEmissions } from "../utils/emissions.js";
+import { EMISSION_FACTORS_KG_PER_MILE } from "../utils/emissions.js";
+
+const carFactor = EMISSION_FACTORS_KG_PER_MILE.car;
+const busFactor = EMISSION_FACTORS_KG_PER_MILE.bus;
+const bikeFactor = EMISSION_FACTORS_KG_PER_MILE.bike;
+const walkFactor = EMISSION_FACTORS_KG_PER_MILE.walk;
+
+const startIcon = L.divIcon({
+  className: "",
+  html: `<div style="width:16px;height:16px;border-radius:999px;background:#1d4ed8;border:2px solid white;box-shadow:0 0 0 2px #1d4ed8;"></div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
+const endIcon = L.divIcon({
+  className: "",
+  html: `<div style="width:16px;height:16px;border-radius:999px;background:#dc2626;border:2px solid white;box-shadow:0 0 0 2px #dc2626;"></div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
+function Recenter({ start, end }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!start || !end) return;
+    const bounds = L.latLngBounds([start, end]);
+    map.fitBounds(bounds.pad(0.3));
+  }, [map, start, end]);
+  return null;
+}
 
 export default function EcoRoute() {
   const { id } = useParams();
-
   const [market, setMarket] = useState(null);
-  const [mode, setMode] = useState("car");
-
-  const [distance, setDistance] = useState("0");
+  const [loadingMarket, setLoadingMarket] = useState(Boolean(id));
+  const [start, setStart] = useState([41.8781, -87.6298]); // Chicago default
+  const [end, setEnd] = useState([41.8819, -87.6278]);
   const [routeInfo, setRouteInfo] = useState(null);
-
-  const [locStatus, setLocStatus] = useState("idle");
-  const [userPos, setUserPos] = useState(null);
-
-  const [showCalc, setShowCalc] = useState(false);
-
-  const [loading, setLoading] = useState(true);
+  const [routing, setRouting] = useState(false);
   const [err, setErr] = useState("");
 
   useEffect(() => {
+    if (!id) return;
     (async () => {
       try {
-        setLoading(true);
+        setLoadingMarket(true);
         const all = await fetchMarkets();
-        const found = all.find((m) => m.id === id);
+        const found = all.find(m => m.id === id);
         if (!found) throw new Error("Market not found");
         setMarket(found);
+        if (Array.isArray(found.coordinates) && found.coordinates.length === 2) {
+          setEnd([found.coordinates[1], found.coordinates[0]]);
+        }
       } catch (e) {
-        setErr(e?.message || "Failed to load market");
+        setErr(e.message || "Failed to load market");
       } finally {
-        setLoading(false);
+        setLoadingMarket(false);
       }
     })();
   }, [id]);
 
-  const calc = useMemo(() => computeEmissions(distance, mode), [distance, mode]);
+  const distanceMiles = useMemo(
+    () => (routeInfo?.distanceMeters ? routeInfo.distanceMeters / 1609.34 : 0),
+    [routeInfo]
+  );
 
-  function getUserLocation() {
-    setLocStatus("getting");
+  const co2 = useMemo(() => {
+    const car = distanceMiles * carFactor;
+    const bus = distanceMiles * busFactor;
+    const bike = distanceMiles * bikeFactor;
+    const walk = distanceMiles * walkFactor;
+    return {
+      car,
+      bus,
+      bike,
+      walk,
+      saveBus: car - bus,
+      saveBike: car - bike,
+      saveWalk: car - walk,
+    };
+  }, [distanceMiles]);
+
+  async function calcRoute(profile = "driving") {
+    try {
+      setRouting(true);
+      setErr("");
+      const qs = new URLSearchParams({
+        startLat: String(start[0]),
+        startLon: String(start[1]),
+        endLat: String(end[0]),
+        endLon: String(end[1]),
+        profile,
+      }).toString();
+      const res = await fetch(`/api/route?${qs}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Route failed");
+      setRouteInfo(data);
+    } catch (e) {
+      setErr(e.message || "Failed to route");
+    } finally {
+      setRouting(false);
+    }
+  }
+
+  function useCurrentLocation() {
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        setUserPos({ lat, lon });
-        setLocStatus("ready");
-      },
-      () => setLocStatus("error"),
-      { enableHighAccuracy: true, timeout: 10000 }
+      (p) => setStart([p.coords.latitude, p.coords.longitude]),
+      () => setErr("Unable to read your location")
     );
   }
 
-  async function getRouteDistance(profile = "driving") {
-    if (!userPos || !market?.coordinates) return;
-
-    const [endLon, endLat] = market.coordinates;
-
-    const url = `/api/route?startLat=${userPos.lat}&startLon=${userPos.lon}&endLat=${endLat}&endLon=${endLon}&profile=${profile}`;
-
-    const res = await fetch(url);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || "Route failed");
-
-    setRouteInfo(data);
-
-    const miles = data.distanceMeters / 1609.34;
-    setDistance(miles.toFixed(2));
+  if (loadingMarket) {
+    return <div className="container"><div className="card">Loading market...</div></div>;
   }
-
-  if (loading) return <div className="container"><div className="card">Loading…</div></div>;
-  if (err) return <div className="container"><div className="card">{err}</div></div>;
 
   return (
     <div className="container">
-      <Link to={`/market/${market.id}`} className="btn ghost">← Back</Link>
-
-      <div style={{ height: 12 }} />
-
-      <div className="card">
-        <div className="tape tl" />
-        <div className="tape tr" />
-
-        <div className="space">
+      <div className="topbar">
+        <div className="brand">
+          <div className="logo" />
           <div>
-            <h2 className="h1" style={{ fontSize: 28, margin: 0 }}>EcoRoute</h2>
-            <p className="sub" style={{ marginTop: 8 }}>
-              Destination: <b>{market.name}</b>
+            <h1 className="h1">EcoRoute</h1>
+            <p className="sub">
+              Drag both points, calculate route distance, and compare CO2 savings.
+              {market ? ` Destination preset: ${market.name}.` : ""}
             </p>
           </div>
-          <span className="badge">Real distance</span>
         </div>
+      </div>
 
-        <div className="sectionTitle">Start location</div>
+      <div className="card r1" style={{ marginBottom: 16 }}>
         <div className="row">
-          <button className="btn primary" onClick={getUserLocation}>
-            📍 Use my location
+          <button className="btn" onClick={useCurrentLocation}>Use My Start Location</button>
+          <button className="btn primary" onClick={() => calcRoute("driving")} disabled={routing}>
+            {routing ? "Calculating..." : "Calculate Route"}
           </button>
+          {id && <Link className="btn" to={`/market/${id}`}>Back to Market</Link>}
+        </div>
+        {err && <div className="smallNote" style={{ color: "#c0392b" }}>{err}</div>}
+      </div>
 
-          {userPos && (
-            <>
-              <button className="btn" onClick={() => getRouteDistance("driving")}>
-                🧭 Route (drive)
-              </button>
-              <button className="btn" onClick={() => getRouteDistance("cycling")}>
-                🚲 Route (bike)
-              </button>
-              <button className="btn" onClick={() => getRouteDistance("walking")}>
-                🚶 Route (walk)
-              </button>
-            </>
-          )}
+      <div className="card r2" style={{ marginBottom: 16, overflow: "hidden" }}>
+        <MapContainer center={start} zoom={13} style={{ height: 460, width: "100%", borderRadius: 14 }}>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <Recenter start={start} end={end} />
+          <Marker
+            position={start}
+            icon={startIcon}
+            draggable
+            eventHandlers={{
+              dragend: (e) => {
+                const p = e.target.getLatLng();
+                setStart([p.lat, p.lng]);
+              },
+            }}
+          >
+            <Popup>Start Point</Popup>
+          </Marker>
+          <Marker
+            position={end}
+            icon={endIcon}
+            draggable
+            eventHandlers={{
+              dragend: (e) => {
+                const p = e.target.getLatLng();
+                setEnd([p.lat, p.lng]);
+              },
+            }}
+          >
+            <Popup>End Point</Popup>
+          </Marker>
+        </MapContainer>
+      </div>
+
+      <div className="grid">
+        <div className="card r3">
+          <div className="sectionTitle">Route</div>
+          <div className="kv"><span className="k">Distance</span><span className="v">{distanceMiles.toFixed(2)} miles</span></div>
+          <div className="kv"><span className="k">Duration</span><span className="v">{routeInfo ? `${Math.round(routeInfo.durationSeconds / 60)} min` : "-"}</span></div>
+          <div className="smallNote">Distance comes from your route API.</div>
         </div>
 
-        {locStatus === "getting" && (
-          <div className="smallNote">Requesting location permission…</div>
-        )}
-        {locStatus === "error" && (
-          <div className="smallNote">Location failed. Allow permission and try again.</div>
-        )}
-
-        {userPos && (
-          <div className="smallNote">
-            Your coords: {userPos.lat.toFixed(5)}, {userPos.lon.toFixed(5)}
-          </div>
-        )}
-
-        {routeInfo && (
-          <div className="smallNote">
-            Route: {(routeInfo.distanceMeters / 1000).toFixed(2)} km •{" "}
-            {(routeInfo.durationSeconds / 60).toFixed(0)} min
-          </div>
-        )}
-
-        <div className="sectionTitle">Transport mode for CO₂</div>
-        <div className="row">
-          <button className={`btn ${mode === "car" ? "primary" : ""}`} onClick={() => setMode("car")}>🚗 Car</button>
-          <button className={`btn ${mode === "bus" ? "primary" : ""}`} onClick={() => setMode("bus")}>🚌 Bus</button>
-          <button className={`btn ${mode === "bike" ? "primary" : ""}`} onClick={() => setMode("bike")}>🚲 Bike</button>
-          <button className={`btn ${mode === "walk" ? "primary" : ""}`} onClick={() => setMode("walk")}>🚶 Walk</button>
-        </div>
-
-        <div className="bigStat">
-          <div className="headline">
-            {calc.savedKg >= 0 ? "You save " : "You add "}
-            <span style={{ fontWeight: 1000 }}>
-              {Math.abs(calc.savedKg).toFixed(2)} kg CO₂
-            </span>
-          </div>
-          <div className="hint">
-            Car baseline: <b>{calc.carKg.toFixed(2)} kg</b> • Selected mode:{" "}
-            <b>{calc.chosenKg.toFixed(2)} kg</b>
-          </div>
-        </div>
-
-        <div style={{ height: 12 }} />
-
-        <div className="row">
-          <button className="btn" onClick={() => setShowCalc(s => !s)}>
-            {showCalc ? "Hide calculation" : "Expand calculation"}
-          </button>
-
-          {userPos && (
-            <a
-              className="btn"
-              target="_blank"
-              rel="noreferrer"
-              href={`https://www.google.com/maps/dir/?api=1&origin=${userPos.lat},${userPos.lon}&destination=${market.coordinates[1]},${market.coordinates[0]}&travelmode=driving`}
-            >
-              🗺️ Open in Google Maps
-            </a>
-          )}
-        </div>
-
-        {showCalc && (
-          <div className="bigStat">
-            <div className="headline">Calculation details</div>
-            <div className="hint">
-              CO₂(mode) = distance_miles × factor_kg_per_mile
-            </div>
-
-            <div className="divider" />
-
-            <div className="sectionTitle">Factors (kg / mile)</div>
-            <pre className="code">{JSON.stringify(calc.factors, null, 2)}</pre>
-
-            <div className="sectionTitle">Raw output</div>
-            <pre className="code">
-              {JSON.stringify(
-                {
-                  distanceMiles: calc.distanceMiles,
-                  mode: calc.mode,
-                  carKg: calc.carKg,
-                  chosenKg: calc.chosenKg,
-                  savedKg: calc.savedKg,
-                  routeInfo,
-                  userPos
-                },
-                null,
-                2
-              )}
-            </pre>
-          </div>
-        )}
-
-        <div className="smallNote">
-          Methodology: OSRM routing distance × public average emissions factors.
+        <div className="card r4">
+          <div className="sectionTitle">CO2 Savings vs Car</div>
+          <div className="kv"><span className="k">Car baseline</span><span className="v">{co2.car.toFixed(2)} kg</span></div>
+          <div className="kv"><span className="k">Bus saves</span><span className="v">{co2.saveBus.toFixed(2)} kg</span></div>
+          <div className="kv"><span className="k">Bike saves</span><span className="v">{co2.saveBike.toFixed(2)} kg</span></div>
+          <div className="kv"><span className="k">Walk saves</span><span className="v">{co2.saveWalk.toFixed(2)} kg</span></div>
         </div>
       </div>
     </div>

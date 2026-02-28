@@ -65,6 +65,35 @@ export async function apiGetUser(username) {
   return apiFetch(`/api/users/${username}`);
 }
 
+export async function apiPlantGarden(index, plantId, getToken) {
+  return apiFetch("/api/users/me/garden/plant", {
+    method: "POST",
+    body: JSON.stringify({ index, plantId })
+  }, getToken);
+}
+
+export async function apiDeleteGardenTile(index, getToken) {
+  return apiFetch("/api/users/me/garden/delete", {
+    method: "POST",
+    body: JSON.stringify({ index })
+  }, getToken);
+}
+
+export async function apiBuyGardenItem(plantId, getToken) {
+  return apiFetch("/api/users/me/garden/buy-item", {
+    method: "POST",
+    body: JSON.stringify({ plantId })
+  }, getToken);
+}
+
+export async function apiBuyGardenRow(getToken) {
+  return apiFetch("/api/users/me/garden/buy-row", { method: "POST" }, getToken);
+}
+
+export async function apiBuyGardenColumn(getToken) {
+  return apiFetch("/api/users/me/garden/buy-column", { method: "POST" }, getToken);
+}
+
 // ── Activities ────────────────────────────────────────────────────────────────
 
 export async function apiLogActivity(type, details, getToken) {
@@ -91,32 +120,32 @@ export async function apiFriendsLeaderboard(getToken) {
 // ── Friends ───────────────────────────────────────────────────────────────────
 
 export async function apiGetFriends(getToken) {
-  return apiFetch("/api/friends", {}, getToken);
+  return apiFetch("/api/social", {}, getToken);
 }
 
 export async function apiGetFriendRequests(getToken) {
-  return apiFetch("/api/friends/requests", {}, getToken);
+  return apiFetch("/api/social/requests", {}, getToken);
 }
 
 export async function apiSendFriendRequest(username, getToken) {
-  return apiFetch("/api/friends/request", {
+  return apiFetch("/api/social/request", {
     method: "POST",
     body: JSON.stringify({ username })
   }, getToken);
 }
 
 export async function apiAcceptFriendRequest(id, getToken) {
-  return apiFetch(`/api/friends/accept/${id}`, { method: "POST" }, getToken);
+  return apiFetch(`/api/social/accept/${id}`, { method: "POST" }, getToken);
 }
 
 export async function apiDeclineFriendRequest(id, getToken) {
-  return apiFetch(`/api/friends/decline/${id}`, { method: "POST" }, getToken);
+  return apiFetch(`/api/social/decline/${id}`, { method: "POST" }, getToken);
 }
 
 export async function apiCancelFriendRequest(id, getToken) {
-  return apiFetch(`/api/friends/cancel/${id}`, { method: "DELETE" }, getToken);
+  return apiFetch(`/api/social/cancel/${id}`, { method: "DELETE" }, getToken);
 }
 
 export async function apiRemoveFriend(username, getToken) {
-  return apiFetch(`/api/friends/${username}`, { method: "DELETE" }, getToken);
+  return apiFetch(`/api/social/${username}`, { method: "DELETE" }, getToken);
 }

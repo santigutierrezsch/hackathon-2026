@@ -67,6 +67,7 @@ app.use("/api/auth",        authRoute);
 app.use("/api/users",       usersRoute);
 app.use("/api/activities",  activitiesRoute);
 app.use("/api/friends",     friendsRoute);
+app.use("/api/social",      friendsRoute);
 app.use("/api/leaderboard", leaderboardRoute);
 
 app.get("/", (req, res) => res.send("EcoTracker API running"));

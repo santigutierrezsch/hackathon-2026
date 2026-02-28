@@ -1,140 +1,42 @@
-import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchMarkets } from "../utils/api.js";
-import { isOpenNow } from "../utils/isOpenNow.js";
-
-// 1. IMPORT YOUR GARDEN HERE 🪴
-import Garden from "../components/Garden.jsx";
 
 export default function Home() {
-  const [markets, setMarkets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [expandedId, setExpandedId] = useState(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const data = await fetchMarkets();
-        setMarkets(data);
-      } catch (e) {
-        setErr(e?.message || "Failed to load markets");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  const sorted = useMemo(() => {
-    return [...markets].sort((a, b) => {
-      const ao = isOpenNow(a) ? 0 : 1;
-      const bo = isOpenNow(b) ? 0 : 1;
-      if (ao !== bo) return ao - bo;
-      return (a.name || "").localeCompare(b.name || "");
-    });
-  }, [markets]);
-
   return (
-    <div className="container">
-      <div className="topbar">
-        <div className="brand">
-          <div className="logo" />
-          <div>
-            <h1 className="h1">EcoMarket</h1>
-            <p className="sub">
-              Find markets, see hours, and compare CO₂ based on how you get there.
-            </p>
+    <div className="container" style={{ maxWidth: 980 }}>
+      <header className="card r1" style={{ marginBottom: 16 }}>
+        <div className="sectionTitle" style={{ marginTop: 0 }}>Header</div>
+        <h1 className="h1">EcoTracker</h1>
+        <p className="sub">Track eco actions, earn XP, earn coins, and grow your garden.</p>
+      </header>
+
+      <section className="card r2" style={{ marginBottom: 16 }}>
+        <div className="sectionTitle" style={{ marginTop: 0 }}>Hero</div>
+        <div className="bigStat">
+          <div className="headline">A sustainability game with real progress</div>
+          <div className="hint">
+            Every logged activity gives XP. Your lifetime XP feeds your coin balance, which you can spend to expand and customize your Garden.
           </div>
         </div>
-      </div>
-
-      {/* 2. DROP THE GARDEN RIGHT HERE! 🪴 
-          I added a little margin so it doesn't bump into your markets grid. 
-      */}
-      <div style={{ margin: '40px 0' }}>
-        <Garden />
-      </div>
-
-      {loading && <div className="card">Loading markets…</div>}
-      {err && <div className="card">{err}</div>}
-
-      {!loading && !err && (
-        <div className="grid">
-          {sorted.map((m, idx) => {
-            const open = isOpenNow(m);
-            const rot = ["r1", "r2", "r3", "r4"][idx % 4];
-            const expanded = expandedId === m.id;
-
-            return (
-              <div key={m.id} className={`card ${rot}`}>
-                <div className="tape tl" />
-                <div className="tape tr" />
-
-                <div className="space">
-                  <div>
-                    <h2 className="title">{m.name}</h2>
-                    <div className="meta">
-                      <div><b>Address:</b> {m.address}</div>
-                      <div><b>Days:</b> {(m.daysOpen || []).join(", ")}</div>
-                      <div><b>Hours:</b> {m.hours?.open} – {m.hours?.close}</div>
-                    </div>
-                  </div>
-
-                  <span className={`badge ${open ? "ok" : "bad"}`}>
-                    {open ? "OPEN NOW" : "CLOSED"}
-                  </span>
-                </div>
-
-                <div className="divider" />
-
-                {!expanded ? (
-                  <div className="row">
-                    <button
-                      className="btn primary"
-                      onClick={() => setExpandedId(m.id)}
-                    >
-                      View
-                    </button>
-
-                    <Link className="btn" to={`/route/${m.id}`}>
-                      EcoRoute →
-                    </Link>
-                  </div>
-                ) : (
-                  <>
-                    <div className="sectionTitle">Quick info</div>
-
-                    <div className="bigStat">
-                      <div className="headline">Eco impact preview 🌱</div>
-                      <div className="hint">
-                        Tap EcoRoute to use your real location and compare CO₂.
-                      </div>
-                    </div>
-
-                    <div className="row">
-                      <button
-                        className="btn"
-                        onClick={() => setExpandedId(null)}
-                      >
-                        Collapse
-                      </button>
-
-                      <Link className="btn primary" to={`/route/${m.id}`}>
-                        Calculate EcoRoute →
-                      </Link>
-
-                      <Link className="btn" to={`/market/${m.id}`}>
-                        Details →
-                      </Link>
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
+        <div className="row" style={{ marginTop: 12 }}>
+          <Link className="btn primary" to="/login">Sign In</Link>
+          <Link className="btn" to="/login">Get Started</Link>
         </div>
-      )}
+      </section>
+
+      <section className="card r3" style={{ marginBottom: 16 }}>
+        <div className="sectionTitle" style={{ marginTop: 0 }}>Body</div>
+        <div className="meta">
+          <div>EcoTracker helps you log sustainability habits like carpooling, EV usage, and recycling.</div>
+          <div>You earn XP for activities and appear on global and social leaderboards.</div>
+          <div>XP also grows your coin balance. Coins can be spent on plants or extra plots for your Garden.</div>
+          <div>Use the Social page to add friends and compare progress. Visit Resources for calculators and guides.</div>
+        </div>
+      </section>
+
+      <footer className="card r4">
+        <div className="sectionTitle" style={{ marginTop: 0 }}>Footer</div>
+        <div className="meta">EcoTracker 2026 Hackathon Build</div>
+      </footer>
     </div>
   );
 }

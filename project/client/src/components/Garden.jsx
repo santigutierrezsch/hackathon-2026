@@ -1,82 +1,154 @@
+<<<<<<< Updated upstream
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase'; // ✅ Fixed path to match your screenshot!
 import { PLANT_ART } from './PlantGraphics'; // Adjust path if you saved it in assets!
+=======
+import { useMemo, useState } from "react";
+import {
+  apiBuyGardenColumn,
+  apiBuyGardenItem,
+  apiBuyGardenRow,
+  apiDeleteGardenTile,
+  apiPlantGarden,
+} from "../utils/api.js";
+>>>>>>> Stashed changes
 
-const Garden = () => {
-  // Database & User State
-  const [user, setUser] = useState(null);
-  const [garden, setGarden] = useState(Array(9).fill(null));
-  const [inventory, setInventory] = useState(['🌱', '🌻']);
-  const [coins, setCoins] = useState(0);
-  
-  // UI State
+const MAX_GARDEN_SIZE = 8;
+const PLANTS = {
+  green_plant: { name: "Green Plant", emoji: "🌱", cost: 0 },
+  sunflower: { name: "Sunflower", emoji: "🌻", cost: 0 },
+  mushroom: { name: "Mushroom", emoji: "🍄", cost: 20 },
+  cactus: { name: "Cactus", emoji: "🌵", cost: 30 },
+  tree: { name: "Tree", emoji: "🌲", cost: 50 },
+  flower: { name: "Flower", emoji: "🌸", cost: 100 },
+};
+const LEGACY_TO_ID = {
+  "🌱": "green_plant",
+  "🌻": "sunflower",
+  "🍄": "mushroom",
+  "🌵": "cactus",
+  "🌲": "tree",
+  "🌸": "flower",
+};
+
+function normalizePlantId(value) {
+  if (value == null) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  return LEGACY_TO_ID[raw] || raw;
+}
+
+export default function Garden({
+  garden = [],
+  gardenRows = 3,
+  gardenCols = 3,
+  inventory = [],
+  coins = 0,
+  editable = false,
+  getToken = null,
+  onChanged = null,
+}) {
   const [selectedPlant, setSelectedPlant] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [selectedTile, setSelectedTile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
 
-  // 1. AUTO-DETECT USER & FETCH FIREBASE DATA
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log("Auth Status:", currentUser ? "Logged In" : "Not Logged In");
-      setUser(currentUser);
-      
-      if (currentUser?.email) {
-        try {
-          const userRef = doc(db, "users", currentUser.email);
-          const docSnap = await getDoc(userRef);
+  const normalizedGarden = useMemo(() => garden.map(normalizePlantId), [garden]);
+  const normalizedInventory = useMemo(
+    () => inventory.map(normalizePlantId).filter(Boolean),
+    [inventory]
+  );
 
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setGarden(data.garden || Array(9).fill(null));
-            setInventory(data.inventory || ['🌱', '🌻']);
-            setCoins(data.coins !== undefined ? data.coins : 0);
-          } else {
-            // First time opening the garden! Give them the starter pack.
-            await setDoc(userRef, {
-              email: currentUser.email,
-              garden: Array(9).fill(null),
-              inventory: ['🌱', '🌻'],
-              coins: 100 
-            });
-            setCoins(100);
-          }
-        } catch (error) {
-          console.error("🔥 FIREBASE ERROR:", error.message);
-        }
-      }
-      // This will now ALWAYS run, even if there is an error
-      setLoading(false); 
-    });
+  const ownedPlants = useMemo(() => {
+    return normalizedInventory.filter(id => PLANTS[id]).map(id => ({ id, ...PLANTS[id] }));
+  }, [normalizedInventory]);
 
-    return () => unsubscribe(); 
+  const shopPlants = useMemo(() => {
+    return Object.entries(PLANTS)
+      .filter(([, p]) => p.cost > 0)
+      .map(([id, p]) => ({ id, ...p }));
   }, []);
 
-  // 2. HANDLE PLANTING (Saves instantly to Firebase)
-  const handlePlanting = async (index) => {
-    if (!selectedPlant || !user?.email) return;
-    
-    const newGarden = [...garden];
-    newGarden[index] = selectedPlant;
-    setGarden(newGarden);
+  const displayRows = Math.max(1, Math.min(MAX_GARDEN_SIZE, Number(gardenRows) || 3));
+  const displayCols = Math.max(1, Math.min(MAX_GARDEN_SIZE, Number(gardenCols) || 3));
 
-    const userRef = doc(db, "users", user.email);
-    await updateDoc(userRef, { garden: newGarden });
-  };
+  async function plantAt(index) {
+    if (!editable || !selectedPlant || busy || !getToken) return;
+    try {
+      setBusy(true);
+      setMsg("");
+      await apiPlantGarden(index, selectedPlant, getToken);
+      await onChanged?.();
+    } catch (e) {
+      setMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
-  // 3. BUY A ROW (Expands Grid)
-  const handleBuyRow = async () => {
-    if (!user?.email) return alert("Please log in to use the shop!");
-    const ROW_COST = 50;
+  async function deleteAt(index) {
+    if (!editable || busy || !getToken) return;
+    try {
+      setBusy(true);
+      setMsg("");
+      await apiDeleteGardenTile(index, getToken);
+      await onChanged?.();
+      setMsg("Tile cleared.");
+    } catch (e) {
+      setMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
-    if (coins < ROW_COST) return alert("Not enough coins! Do some eco-quests!");
+  async function buyPlant(plantId) {
+    if (!editable || busy || !getToken) return;
+    try {
+      setBusy(true);
+      setMsg("");
+      await apiBuyGardenItem(plantId, getToken);
+      await onChanged?.();
+      setMsg("Plant purchased.");
+    } catch (e) {
+      setMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
-    const newCoins = coins - ROW_COST;
-    const newGarden = [...garden, null, null, null]; // Add 3 new dirt patches
+  async function buyRow() {
+    if (!editable || busy || !getToken) return;
+    try {
+      setBusy(true);
+      setMsg("");
+      await apiBuyGardenRow(getToken);
+      await onChanged?.();
+      setMsg("Added 1 row.");
+    } catch (e) {
+      setMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
-    setCoins(newCoins);
-    setGarden(newGarden);
+  async function buyColumn() {
+    if (!editable || busy || !getToken) return;
+    try {
+      setBusy(true);
+      setMsg("");
+      await apiBuyGardenColumn(getToken);
+      await onChanged?.();
+      setMsg("Added 1 column.");
+    } catch (e) {
+      setMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
+<<<<<<< Updated upstream
     const userRef = doc(db, "users", user.email);
     await updateDoc(userRef, { coins: newCoins, garden: newGarden });
   };
@@ -107,12 +179,49 @@ const Garden = () => {
       background: '#8D6E63', padding: '20px', borderRadius: '15px',
       boxShadow: '-15px 15px 0px rgba(0,0,0,0.1)', transform: 'rotateX(55deg) rotateZ(-45deg)', 
       transformStyle: 'preserve-3d', transition: 'all 0.3s ease'
+=======
+  const styles = {
+    container: {
+      background: "var(--paper)",
+      border: "2px solid var(--border)",
+      borderRadius: 22,
+      boxShadow: "var(--shadow)",
+      padding: 16,
+      position: "relative",
+>>>>>>> Stashed changes
     },
-    dirtPatch: { 
-      width: '80px', height: '80px', background: '#795548', borderRadius: '10px', 
-      display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', 
-      boxShadow: 'inset 0 0 15px rgba(0,0,0,0.5), -4px 4px 0 #5D4037', transformStyle: 'preserve-3d'
+    gridWrapper: { perspective: "1000px", margin: "24px auto 18px", width: "fit-content", maxWidth: "100%" },
+    grid: {
+      display: "grid",
+      gridTemplateColumns: `repeat(${displayCols}, minmax(50px, 1fr))`,
+      gap: 10,
+      background: "#8D6E63",
+      padding: 14,
+      borderRadius: 14,
+      boxShadow: "-12px 12px 0 rgba(0,0,0,0.12)",
+      transform: "rotateX(55deg) rotateZ(-45deg)",
+      transformStyle: "preserve-3d",
+      transition: "all .2s ease",
     },
+    dirtPatch: {
+      width: 60,
+      height: 60,
+      background: "#795548",
+      borderRadius: 10,
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      border: "none",
+      cursor: "pointer",
+      boxShadow: "inset 0 0 15px rgba(0,0,0,.45), -4px 4px 0 #5D4037",
+    },
+    plant: {
+      fontSize: 34,
+      transform: "translateY(-6px)",
+      pointerEvents: "none",
+      filter: "drop-shadow(0 4px 2px rgba(0,0,0,.35))",
+    },
+<<<<<<< Updated upstream
     plant: { display: 'flex', justifyContent: 'center', alignItems: 'center', transform: 'rotateZ(45deg) rotateX(-55deg) translateY(-15px)', pointerEvents: 'none' },
     
     // NEW SHOP STYLES 👇
@@ -137,33 +246,55 @@ const Garden = () => {
       background: '#e0e0e0', color: '#9e9e9e', border: 'none', padding: '10px 20px', 
       borderRadius: '20px', fontWeight: 'bold', fontSize: '14px', width: '100%', cursor: 'not-allowed'
     }
+=======
+>>>>>>> Stashed changes
   };
 
   return (
     <div style={styles.container}>
-      {/* HEADER & COINS */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>🪴 Your Iso-Garden</h2>
-        <div style={{ background: '#FFD700', color: '#B8860B', padding: '8px 15px', borderRadius: '20px', fontWeight: 'bold', fontSize: '18px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-          {coins} 🪙
+      <div className="tape tl" />
+      <div className="space" style={{ marginTop: 4 }}>
+        <div>
+          <div className="sectionTitle" style={{ marginTop: 0 }}>Garden</div>
+          <div className="meta">Collect plants and decorate your garden.</div>
+          <div className="smallNote">{displayRows}x{displayCols} (max 8x8)</div>
         </div>
+        <div className="badge ok" style={{ fontWeight: 900 }}>{coins} Coins</div>
       </div>
 
-      <p style={{color: '#666', marginTop: '10px'}}>
-        {selectedPlant ? `Click the dirt to plant ${selectedPlant}!` : "Select a plant to begin."}
-      </p>
-
-      {/* 3D GARDEN BOARD */}
       <div style={styles.gridWrapper}>
         <div style={styles.grid}>
+<<<<<<< Updated upstream
           {garden.map((plant, index) => (
             <div key={index} style={styles.dirtPatch} onClick={() => handlePlanting(index)}>
               {plant && <div style={styles.plant}>{PLANT_ART[plant] || plant}</div>}
             </div>
+=======
+          {normalizedGarden.map((plantId, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => {
+                setSelectedTile(idx);
+                if (selectedPlant && editable) plantAt(idx);
+              }}
+              disabled={busy}
+              style={{
+                ...styles.dirtPatch,
+                cursor: editable ? "pointer" : "default",
+                opacity: !editable && !plantId ? 0.8 : 1,
+                outline: selectedTile === idx ? "3px solid #bfe9d3" : "none",
+              }}
+              title={editable ? "Select tile / plant selected item" : ""}
+            >
+              {plantId ? <span style={styles.plant}>{PLANTS[plantId]?.emoji || "🪴"}</span> : null}
+            </button>
+>>>>>>> Stashed changes
           ))}
         </div>
       </div>
 
+<<<<<<< Updated upstream
       {/* INVENTORY */}
       <h3>🎒 Your Inventory</h3>
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '30px' }}>
@@ -174,10 +305,28 @@ const Garden = () => {
             onClick={() => setSelectedPlant(plant === selectedPlant ? null : plant)}
           >
             {PLANT_ART[plant] || plant}
+=======
+      {ownedPlants.length > 0 && (
+        <>
+          <div className="sectionTitle">Inventory</div>
+          <div className="row">
+            {ownedPlants.map(plant => (
+              <button
+                key={plant.id}
+                type="button"
+                className={`btn ${selectedPlant === plant.id ? "primary" : ""}`}
+                onClick={() => setSelectedPlant(selectedPlant === plant.id ? null : plant.id)}
+                disabled={!editable}
+              >
+                {plant.emoji} {plant.name}
+              </button>
+            ))}
+>>>>>>> Stashed changes
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
+<<<<<<< Updated upstream
       {/* SHOP */}
       <h3>🛒 Eco Shop</h3>
       <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -201,15 +350,52 @@ const Garden = () => {
               style={{...styles.btn, background: inventory.includes(shopItem.item) ? '#ccc' : '#4CAF50', cursor: inventory.includes(shopItem.item) ? 'not-allowed' : 'pointer'}} 
               onClick={() => handleBuyDeco(shopItem.item, shopItem.price)}
               disabled={inventory.includes(shopItem.item)}
+=======
+      {editable && (
+        <>
+          <div className="sectionTitle">Tile Actions</div>
+          <div className="row">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => selectedTile != null && deleteAt(selectedTile)}
+              disabled={busy || selectedTile == null || !normalizedGarden[selectedTile]}
+>>>>>>> Stashed changes
             >
-              {inventory.includes(shopItem.item) ? 'Owned' : `Buy (${shopItem.price} 🪙)`}
+              Delete Plant
             </button>
+            {selectedTile != null && <span className="smallNote">Selected tile: {selectedTile + 1}</span>}
           </div>
-        ))}
-      </div>
-      
+
+          <div className="sectionTitle">Shop</div>
+          <div className="row">
+            <button type="button" className="btn" onClick={buyRow} disabled={busy || displayRows >= MAX_GARDEN_SIZE}>
+              Buy Row (50)
+            </button>
+            <button type="button" className="btn" onClick={buyColumn} disabled={busy || displayCols >= MAX_GARDEN_SIZE}>
+              Buy Column (50)
+            </button>
+            {shopPlants.map(plant => (
+              <button
+                key={plant.id}
+                type="button"
+                className="btn"
+                onClick={() => buyPlant(plant.id)}
+                disabled={busy || normalizedInventory.includes(plant.id)}
+              >
+                {plant.emoji} {normalizedInventory.includes(plant.id) ? "Owned" : `${plant.name} (${plant.cost})`}
+              </button>
+            ))}
+          </div>
+          <div className="smallNote">Coins come from lifetime XP and decrease when you buy items.</div>
+        </>
+      )}
+
+      {msg && (
+        <div className="smallNote" style={{ color: msg.includes("Added") || msg.includes("purchased") || msg.includes("cleared") ? "#2d6a4f" : "#c0392b" }}>
+          {msg}
+        </div>
+      )}
     </div>
   );
-};
-
-export default Garden;
+}

@@ -32,7 +32,7 @@ export default function Market() {
 
   return (
     <div className="container">
-      <Link to="/" className="btn ghost">← Back</Link>
+      <Link to="/resources" className="btn ghost">← Back</Link>
 
       <div style={{ height: 12 }} />
 
@@ -64,7 +64,7 @@ export default function Market() {
         <div style={{ height: 14 }} />
 
         <div className="row">
-          <Link to={`/route/${market.id}`} className="btn primary">
+          <Link to={`/ecoroute/${market.id}`} className="btn primary">
             EcoRoute + CO₂ →
           </Link>
         </div>

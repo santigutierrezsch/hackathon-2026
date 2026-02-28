@@ -237,6 +237,9 @@ export default function Dashboard() {
             <div style={{ marginTop: 6, fontSize: 14, fontWeight: 800, color: tier.color }}>
               {tier.label}
             </div>
+            <div className="badge ok" style={{ marginTop: 8, display: "inline-flex" }}>
+              {(dbUser?.coins || 0).toLocaleString()} Coins
+            </div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div className="sectionTitle">Welcome back</div>

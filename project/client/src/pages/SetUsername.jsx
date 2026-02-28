@@ -130,7 +130,7 @@ export default function SetUsername() {
         </form>
 
         <div className="smallNote" style={{ marginTop: 16 }}>
-          You can change your username later from your profile. Friends will be notified via webhook.
+          You can change your username later from your profile.
         </div>
       </div>
     </div>

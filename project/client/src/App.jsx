@@ -14,8 +14,9 @@ import Login       from "./pages/Login.jsx";
 import SetUsername from "./pages/SetUsername.jsx";
 import Dashboard   from "./pages/Dashboard.jsx";
 import Leaderboard from "./pages/Leaderboard.jsx";
-import Friends     from "./pages/Friends.jsx";
+import Social      from "./pages/Social.jsx";
 import Profile     from "./pages/Profile.jsx";
+import PublicProfile from "./pages/PublicProfile.jsx";
 import Tools       from "./pages/Tools.jsx";
 
 // 👉 Make sure your CSS file is imported here! (Adjust path if needed)
@@ -24,6 +25,7 @@ import "./App.css";
 export default function App() {
   return (
     <AuthProvider>
+<<<<<<< Updated upstream
       
       {/* 🌲 1. The Animated CSS Forest Background */}
       <div className="eco-background">
@@ -32,6 +34,23 @@ export default function App() {
         <div className="css-tree tree-3"></div>
         <div className="css-tree tree-4"></div>
       </div>
+=======
+      <Navbar />
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login"        element={<Login />} />
+        <Route path="/leaderboard"  element={<Leaderboard />} />
+        <Route path="/tools"        element={<Tools />} />
+        <Route path="/resources"    element={<Tools />} />
+        <Route path="/"             element={<Home />} />
+        <Route path="/market/:id"   element={<Market />} />
+        <Route path="/ecoroute"     element={<EcoRoute />} />
+        <Route path="/ecoroute/:id" element={<EcoRoute />} />
+        <Route path="/route/:id"    element={<EcoRoute />} />
+        <Route path="/nerd"         element={<NerdStats />} />
+        <Route path="/user/:username"  element={<PublicProfile />} />
+        <Route path="/u/:username"  element={<PublicProfile />} />
+>>>>>>> Stashed changes
 
       {/* 🚀 2. Wrap your app content to keep it in front of the background */}
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -46,6 +65,7 @@ export default function App() {
           <Route path="/route/:id"    element={<EcoRoute />} />
           <Route path="/nerd"         element={<NerdStats />} />
 
+<<<<<<< Updated upstream
           {/* Auth-only: set username (no username required yet) */}
           <Route path="/set-username" element={<SetUsername />} />
 
@@ -63,6 +83,19 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
+=======
+        {/* Protected routes (require login + username) */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute><Dashboard /></ProtectedRoute>
+        } />
+        <Route path="/social" element={
+          <ProtectedRoute><Social /></ProtectedRoute>
+        } />
+        <Route path="/friends" element={<Navigate to="/social" replace />} />
+        <Route path="/profile" element={
+          <ProtectedRoute><Profile /></ProtectedRoute>
+        } />
+>>>>>>> Stashed changes
 
     </AuthProvider>
   );
