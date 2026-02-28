@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase'; // ✅ Fixed path to match your screenshot!
+import { PLANT_ART } from './PlantGraphics'; // Adjust path if you saved it in assets!
 
 const Garden = () => {
   // Database & User State
@@ -97,8 +98,9 @@ const Garden = () => {
   };
 
   // STYLES
+  // UPGRADED STYLES ✨
   const styles = {
-    container: { maxWidth: '600px', margin: '0 auto', textAlign: 'center', fontFamily: 'system-ui', padding: '20px' },
+    container: { maxWidth: '700px', margin: '0 auto', textAlign: 'center', fontFamily: 'system-ui', padding: '20px' },
     gridWrapper: { perspective: '1000px', margin: '40px auto', width: 'fit-content' },
     grid: { 
       display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', 
@@ -111,19 +113,31 @@ const Garden = () => {
       display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', 
       boxShadow: 'inset 0 0 15px rgba(0,0,0,0.5), -4px 4px 0 #5D4037', transformStyle: 'preserve-3d'
     },
-    plant: { fontSize: '60px', transform: 'rotateZ(45deg) rotateX(-55deg) translateY(-20px)', pointerEvents: 'none', filter: 'drop-shadow(-5px 15px 5px rgba(0,0,0,0.4))' },
-    shopCard: { background: '#fff', padding: '10px', borderRadius: '10px', border: '2px solid #eee', display: 'flex', flexDirection: 'column', gap: '5px', minWidth: '100px' },
-    btn: { background: '#FF9800', color: 'white', border: 'none', padding: '8px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }
+    plant: { display: 'flex', justifyContent: 'center', alignItems: 'center', transform: 'rotateZ(45deg) rotateX(-55deg) translateY(-15px)', pointerEvents: 'none' },
+    
+    // NEW SHOP STYLES 👇
+    shopCard: { 
+      background: '#ffffff', padding: '15px', borderRadius: '16px', 
+      boxShadow: '0 4px 12px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', 
+      alignItems: 'center', gap: '12px', minWidth: '110px', border: '1px solid #f0f0f0',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+    },
+    plantPreviewBox: {
+      background: '#f8f9fa', width: '70px', height: '70px', borderRadius: '12px',
+      display: 'flex', justifyContent: 'center', alignItems: 'center',
+      boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.05)' // Makes it look like a little display case
+    },
+    btn: { 
+      background: 'linear-gradient(135deg, #4CAF50, #2E7D32)', color: 'white', 
+      border: 'none', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', 
+      fontWeight: 'bold', fontSize: '14px', width: '100%',
+      boxShadow: '0 4px 8px rgba(76, 175, 80, 0.3)', transition: 'transform 0.1s'
+    },
+    btnDisabled: { 
+      background: '#e0e0e0', color: '#9e9e9e', border: 'none', padding: '10px 20px', 
+      borderRadius: '20px', fontWeight: 'bold', fontSize: '14px', width: '100%', cursor: 'not-allowed'
+    }
   };
-
-  if (loading) return <div style={{textAlign: 'center', padding: '50px'}}>Loading your garden... 🪴</div>;
-
-  if (!user) return (
-    <div style={styles.container}>
-      <h2>🪴 Your Iso-Garden</h2>
-      <p>Please log in to view and upgrade your garden!</p>
-    </div>
-  );
 
   return (
     <div style={styles.container}>
@@ -144,7 +158,7 @@ const Garden = () => {
         <div style={styles.grid}>
           {garden.map((plant, index) => (
             <div key={index} style={styles.dirtPatch} onClick={() => handlePlanting(index)}>
-              {plant && <div style={styles.plant}>{plant}</div>}
+              {plant && <div style={styles.plant}>{PLANT_ART[plant] || plant}</div>}
             </div>
           ))}
         </div>
@@ -159,7 +173,7 @@ const Garden = () => {
             style={{ fontSize: '30px', padding: '10px', border: selectedPlant === plant ? '3px solid #4CAF50' : '3px solid #eee', borderRadius: '15px', cursor: 'pointer', background: selectedPlant === plant ? '#C8E6C9' : '#fff', transition: 'transform 0.1s', transform: selectedPlant === plant ? 'scale(1.1)' : 'scale(1)' }} 
             onClick={() => setSelectedPlant(plant === selectedPlant ? null : plant)}
           >
-            {plant}
+            {PLANT_ART[plant] || plant}
           </div>
         ))}
       </div>
@@ -182,7 +196,7 @@ const Garden = () => {
           { item: '🌸', price: 100 }
         ].map((shopItem) => (
           <div key={shopItem.item} style={styles.shopCard}>
-            <span style={{ fontSize: '28px' }}>{shopItem.item}</span>
+            <span style={{ fontSize: '28px' }}>{PLANT_ART[shopItem.item] || shopItem.item}</span>
             <button 
               style={{...styles.btn, background: inventory.includes(shopItem.item) ? '#ccc' : '#4CAF50', cursor: inventory.includes(shopItem.item) ? 'not-allowed' : 'pointer'}} 
               onClick={() => handleBuyDeco(shopItem.item, shopItem.price)}

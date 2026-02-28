@@ -40,3 +40,59 @@
 .read-the-docs {
   color: #888;
 }
+
+/* 1. The Main Container (Put this on your body or main app wrapper) */
+.eco-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  /* Soft pastel green sky */
+  background: linear-gradient(to bottom, #e8f5e9 0%, #c8e6c9 100%);
+  z-index: -10; /* Keeps it behind all your app content */
+  overflow: hidden;
+}
+
+/* 2. The Background Hills */
+.eco-background::before {
+  content: '';
+  position: absolute;
+  bottom: -15vh;
+  left: -10vw;
+  width: 70vw;
+  height: 40vh;
+  background: #a5d6a7;
+  border-radius: 100% 100% 0 0;
+  opacity: 0.7;
+}
+
+.eco-background::after {
+  content: '';
+  position: absolute;
+  bottom: -20vh;
+  right: -10vw;
+  width: 80vw;
+  height: 40vh;
+  background: #81c784;
+  border-radius: 100% 100% 0 0;
+}
+
+/* 3. Simple CSS Pine Trees (You can drop a few of these inside the eco-background div) */
+.css-tree {
+  position: absolute;
+  bottom: 15vh;
+  width: 0; 
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 60px solid #66bb6a; /* Pastel green tree color */
+  opacity: 0.8;
+}
+
+/* Tree variations for a forest look */
+.tree-1 { left: 15%; bottom: 18vh; transform: scale(1.2); }
+.tree-2 { left: 30%; bottom: 12vh; transform: scale(0.8); background: transparent; border-bottom-color: #4caf50; z-index: 1; }
+.tree-3 { right: 20%; bottom: 20vh; transform: scale(1.5); }
+.tree-4 { right: 10%; bottom: 10vh; transform: scale(0.9); border-bottom-color: #4caf50; z-index: 1; }
+

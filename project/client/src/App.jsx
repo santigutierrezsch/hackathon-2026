@@ -18,36 +18,52 @@ import Friends     from "./pages/Friends.jsx";
 import Profile     from "./pages/Profile.jsx";
 import Tools       from "./pages/Tools.jsx";
 
+// 👉 Make sure your CSS file is imported here! (Adjust path if needed)
+import "./App.css"; 
+
 export default function App() {
   return (
     <AuthProvider>
-      <Navbar />
-      <Routes>
-        {/* Public routes */}
-        <Route path="/login"        element={<Login />} />
-        <Route path="/leaderboard"  element={<Leaderboard />} />
-        <Route path="/tools"        element={<Tools />} />
-        <Route path="/"             element={<Home />} />
-        <Route path="/market/:id"   element={<Market />} />
-        <Route path="/route/:id"    element={<EcoRoute />} />
-        <Route path="/nerd"         element={<NerdStats />} />
+      
+      {/* 🌲 1. The Animated CSS Forest Background */}
+      <div className="eco-background">
+        <div className="css-tree tree-1"></div>
+        <div className="css-tree tree-2"></div>
+        <div className="css-tree tree-3"></div>
+        <div className="css-tree tree-4"></div>
+      </div>
 
-        {/* Auth-only: set username (no username required yet) */}
-        <Route path="/set-username" element={<SetUsername />} />
+      {/* 🚀 2. Wrap your app content to keep it in front of the background */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <Navbar />
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login"        element={<Login />} />
+          <Route path="/leaderboard"  element={<Leaderboard />} />
+          <Route path="/tools"        element={<Tools />} />
+          <Route path="/"             element={<Home />} />
+          <Route path="/market/:id"   element={<Market />} />
+          <Route path="/route/:id"    element={<EcoRoute />} />
+          <Route path="/nerd"         element={<NerdStats />} />
 
-        {/* Protected routes (require login + username) */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute><Dashboard /></ProtectedRoute>
-        } />
-        <Route path="/friends" element={
-          <ProtectedRoute><Friends /></ProtectedRoute>
-        } />
-        <Route path="/profile" element={
-          <ProtectedRoute><Profile /></ProtectedRoute>
-        } />
+          {/* Auth-only: set username (no username required yet) */}
+          <Route path="/set-username" element={<SetUsername />} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Protected routes (require login + username) */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute><Dashboard /></ProtectedRoute>
+          } />
+          <Route path="/friends" element={
+            <ProtectedRoute><Friends /></ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute><Profile /></ProtectedRoute>
+          } />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+
     </AuthProvider>
   );
 }
