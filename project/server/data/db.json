@@ -19,6 +19,16 @@
       "xp": 0,
       "webhook_url": null,
       "created_at": 1772301941
+    },
+    {
+      "id": "QrNsXmqXM4NfW1WZyC3Aj8GTqKl1",
+      "username": "EcoBuggy",
+      "email": "connor.kasper2@gmail.com",
+      "display_name": "Connor Kasper",
+      "photo_url": "https://lh3.googleusercontent.com/a/ACg8ocJeRJ2pMIT0Bv-QQyxXUS66BmhBp7OFNZNgG2XsKGVi-PrqAkHw=s96-c",
+      "xp": 50,
+      "webhook_url": null,
+      "created_at": 1772309943
     }
   ],
   "friend_requests": [],
@@ -98,10 +108,18 @@
       "xp_earned": 50,
       "details": {},
       "created_at": 1772306186
+    },
+    {
+      "id": 9,
+      "user_id": "QrNsXmqXM4NfW1WZyC3Aj8GTqKl1",
+      "type": "farmers_market",
+      "xp_earned": 50,
+      "details": {},
+      "created_at": 1772310456
     }
   ],
   "_seq": {
     "friend_requests": 0,
-    "activities": 8
+    "activities": 9
   }
 }
