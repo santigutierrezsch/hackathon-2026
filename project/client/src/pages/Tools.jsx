@@ -229,7 +229,7 @@ const TOOLS = [
     desc: "Find nearby farmers markets to buy fresh, local, seasonal food and reduce food-miles.",
     rot: "r1",
     isLink: true,
-    linkTo: "/",
+    linkTo: "/resources",
     linkLabel: "Browse Markets →",
   },
   {
@@ -239,8 +239,8 @@ const TOOLS = [
     desc: "Calculate the CO₂ impact of your journey to a farmers market and compare transport modes.",
     rot: "r2",
     isLink: true,
-    linkTo: "/",
-    linkLabel: "Go to Markets →",
+    linkTo: "/ecoroute",
+    linkLabel: "Open EcoRoute →",
   },
   {
     id: "carbon",
@@ -281,13 +281,28 @@ export default function Tools() {
 
   return (
     <div className="container">
-      <div className="topbar">
-        <div className="brand">
-          <div>
-            <h1 className="h1">Sustainability Tools</h1>
-            <p className="sub">Resources and calculators to help you live more sustainably.</p>
-          </div>
-        </div>
+      {/* Centered page header */}
+      <div style={{ textAlign: "center", padding: "32px 0 24px" }}>
+        <div style={{ fontSize: 48, marginBottom: 10 }}>🛠️</div>
+        <h1 style={{
+          fontSize: "clamp(26px, 5vw, 40px)",
+          fontWeight: 1000,
+          color: "var(--brown)",
+          letterSpacing: -1,
+          margin: "0 0 10px",
+        }}>
+          Sustainability Tools
+        </h1>
+        <p style={{
+          fontSize: 16,
+          color: "rgba(122,90,58,0.7)",
+          fontWeight: 600,
+          maxWidth: 480,
+          margin: "0 auto",
+          lineHeight: 1.5,
+        }}>
+          Calculators and resources to help you live more sustainably.
+        </p>
       </div>
 
       <div className="grid">

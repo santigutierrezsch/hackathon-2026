@@ -16,9 +16,9 @@ const ROW_COST = 50;
 const COL_COST = 50;
 
 const SHOP_PLANTS = [
-  { plant: "🍄", cost: 20,  label: "Mushroom"  },
-  { plant: "🌵", cost: 30,  label: "Cactus"    },
-  { plant: "🌲", cost: 50,  label: "Pine Tree"  },
+  { plant: "🍄", cost: 20,  label: "Mushroom"       },
+  { plant: "🌵", cost: 30,  label: "Cactus"         },
+  { plant: "🌲", cost: 50,  label: "Pine Tree"      },
   { plant: "🌸", cost: 100, label: "Cherry Blossom" },
 ];
 
@@ -27,10 +27,27 @@ function normalizePlant(key) {
   if (!key) return null;
   const known = ["🌱", "🌻", "🍄", "🌵", "🌲", "🌸"];
   if (known.includes(key)) return key;
-  // Try to find by string match
   const found = known.find(k => String(key).includes(k));
   return found || null;
 }
+
+// ── Isometric tile dimensions ─────────────────────────────────────────────────
+const TILE_W     = 80;   // full width of the diamond
+const TILE_H     = 40;   // height of the diamond (top vertex to bottom vertex)
+const TILE_DEPTH = 22;   // height of the side faces (gives the 3D depth)
+
+/*
+  Correct isometric clip-paths (all relative to their own div):
+
+  Top face div  (TILE_W × TILE_H):
+    polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)
+
+  Left face div (TILE_W/2 × TILE_H/2+TILE_DEPTH), positioned at top=TILE_H/2, left=0:
+    polygon(0% 0%, 100% 50%, 100% 100%, 0% 50%)
+
+  Right face div (TILE_W/2 × TILE_H/2+TILE_DEPTH), positioned at top=TILE_H/2, left=TILE_W/2:
+    polygon(0% 50%, 100% 0%, 100% 50%, 0% 100%)
+*/
 
 // ── Read-only isometric garden (for public profiles) ─────────────────────────
 export function GardenReadOnly({ garden = [], garden_rows = 2, garden_cols = 2 }) {
@@ -49,12 +66,19 @@ export function GardenReadOnly({ garden = [], garden_rows = 2, garden_cols = 2 }
 
 // ── Isometric Board ───────────────────────────────────────────────────────────
 function IsometricBoard({ rows, cols, garden, selectedPlant, selectedTile, onTileClick, readOnly }) {
-  const tileW = 72;
-  const tileH = 36;
-  const tileDepth = 14;
+  // Board canvas size
+  const boardW = (rows + cols) * (TILE_W / 2) + TILE_W;
+  const boardH = (rows + cols) * (TILE_H / 2) + TILE_DEPTH + 100; // +100 for plant headroom
 
-  const boardW = (rows + cols) * (tileW / 2);
-  const boardH = (rows + cols) * (tileH / 2) + tileDepth + 80;
+  // Render tiles back-to-front so closer tiles overlap further ones correctly
+  const tiles = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      tiles.push({ r, c });
+    }
+  }
+  // Sort: lower r+c = further back = render first
+  tiles.sort((a, b) => (a.r + a.c) - (b.r + b.c));
 
   return (
     <div style={{
@@ -62,90 +86,115 @@ function IsometricBoard({ rows, cols, garden, selectedPlant, selectedTile, onTil
       overflowX: "auto",
       display: "flex",
       justifyContent: "center",
-      padding: "20px 0 10px",
+      padding: "16px 0 8px",
     }}>
       <div style={{
         position: "relative",
         width: boardW,
         height: boardH,
         margin: "0 auto",
+        flexShrink: 0,
       }}>
-        {Array.from({ length: rows }, (_, r) =>
-          Array.from({ length: cols }, (_, c) => {
-            const x = (c - r) * (tileW / 2) + boardW / 2 - tileW / 2;
-            const y = (c + r) * (tileH / 2);
+        {tiles.map(({ r, c }) => {
+          // Isometric screen position of the tile's top vertex
+          const x = (c - r) * (TILE_W / 2) + boardW / 2 - TILE_W / 2;
+          const y = (c + r) * (TILE_H / 2) + 60; // +60 so plants have room above
 
-            const tile = garden.find(t => t.row === r && t.col === c);
-            const plantKey = tile ? normalizePlant(tile.plant) : null;
-            const isSelected = selectedTile && selectedTile.row === r && selectedTile.col === c;
+          const tile = garden.find(t => t.row === r && t.col === c);
+          const plantKey = tile ? normalizePlant(tile.plant) : null;
+          const isSelected = selectedTile && selectedTile.row === r && selectedTile.col === c;
 
-            return (
-              <div
-                key={`${r}-${c}`}
-                onClick={() => !readOnly && onTileClick(r, c)}
-                style={{
+          // Colour scheme
+          const topColor   = isSelected
+            ? "linear-gradient(135deg, #b8e8a4 0%, #6ec95e 100%)"
+            : "linear-gradient(135deg, #a07848 0%, #7a5230 60%, #6b4423 100%)";
+          const leftColor  = isSelected ? "#4a9e44" : "#4a2e10";
+          const rightColor = isSelected ? "#357a30" : "#2e1a06";
+
+          return (
+            <div
+              key={`${r}-${c}`}
+              onClick={() => !readOnly && onTileClick(r, c)}
+              style={{
+                position: "absolute",
+                left: x,
+                top: y,
+                width: TILE_W,
+                height: TILE_H + TILE_DEPTH,
+                cursor: readOnly ? "default" : (selectedPlant ? "crosshair" : "pointer"),
+                zIndex: r + c + 1,
+              }}
+            >
+              {/* ── Top face (diamond) ── */}
+              <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: TILE_W,
+                height: TILE_H,
+                background: topColor,
+                clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
+                transition: "background 0.15s",
+              }} />
+
+              {/* ── Left face ── */}
+              <div style={{
+                position: "absolute",
+                top: TILE_H / 2,
+                left: 0,
+                width: TILE_W / 2,
+                height: TILE_H / 2 + TILE_DEPTH,
+                background: leftColor,
+                clipPath: "polygon(0% 0%, 100% 50%, 100% 100%, 0% 50%)",
+                transition: "background 0.15s",
+              }} />
+
+              {/* ── Right face ── */}
+              <div style={{
+                position: "absolute",
+                top: TILE_H / 2,
+                left: TILE_W / 2,
+                width: TILE_W / 2,
+                height: TILE_H / 2 + TILE_DEPTH,
+                background: rightColor,
+                clipPath: "polygon(0% 50%, 100% 0%, 100% 50%, 0% 100%)",
+                transition: "background 0.15s",
+              }} />
+
+              {/* ── Plant — rendered upright above the tile centre ── */}
+              {plantKey && PLANT_ART[plantKey] && (
+                <div style={{
                   position: "absolute",
-                  left: x,
-                  top: y,
-                  width: tileW,
-                  height: tileH + tileDepth,
-                  cursor: readOnly ? "default" : "pointer",
-                  zIndex: r + c,
-                }}
-              >
-                {/* Dirt tile top face */}
+                  // Centre horizontally; sit on top of the tile surface
+                  left: "50%",
+                  top: -52,
+                  transform: "translateX(-50%)",
+                  pointerEvents: "none",
+                  zIndex: 20,
+                  filter: "drop-shadow(0 6px 8px rgba(0,0,0,0.32))",
+                }}>
+                  {PLANT_ART[plantKey]}
+                </div>
+              )}
+
+              {/* ── Selection ring on top face ── */}
+              {isSelected && (
                 <div style={{
                   position: "absolute",
                   top: 0,
                   left: 0,
-                  width: tileW,
-                  height: tileH,
-                  background: isSelected
-                    ? "linear-gradient(135deg, #a8d5a2, #7ec87a)"
-                    : "linear-gradient(135deg, #8B6347, #6B4423)",
-                  clipPath: "polygon(50% 0%, 100% 25%, 50% 50%, 0% 25%)",
-                  boxSizing: "border-box",
-                  transition: "background 0.15s",
+                  width: TILE_W,
+                  height: TILE_H,
+                  clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
+                  border: "none",
+                  outline: "none",
+                  boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.55)",
+                  pointerEvents: "none",
                 }} />
-                {/* Dirt tile left face */}
-                <div style={{
-                  position: "absolute",
-                  top: tileH / 2,
-                  left: 0,
-                  width: tileW / 2,
-                  height: tileDepth + tileH / 2,
-                  background: isSelected ? "#5a9e55" : "#4a2e10",
-                  clipPath: "polygon(0% 0%, 50% 50%, 50% 100%, 0% 50%)",
-                }} />
-                {/* Dirt tile right face */}
-                <div style={{
-                  position: "absolute",
-                  top: tileH / 2,
-                  left: tileW / 2,
-                  width: tileW / 2,
-                  height: tileDepth + tileH / 2,
-                  background: isSelected ? "#4a8e45" : "#3a1e08",
-                  clipPath: "polygon(0% 50%, 50% 0%, 100% 0%, 50% 50%, 50% 100%, 0% 50%)",
-                }} />
-
-                {/* Plant — rendered upright above the tile */}
-                {plantKey && PLANT_ART[plantKey] && (
-                  <div style={{
-                    position: "absolute",
-                    top: -44,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    pointerEvents: "none",
-                    zIndex: 10,
-                    filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.3))",
-                  }}>
-                    {PLANT_ART[plantKey]}
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -203,17 +252,16 @@ export default function Garden() {
 
     const existingIdx = garden.findIndex(t => t.row === row && t.col === col);
 
-    // If a tile is already selected (for deletion)
+    // Deselect if clicking the already-selected tile
     if (selectedTile && selectedTile.row === row && selectedTile.col === col) {
       setSelectedTile(null);
       return;
     }
 
-    // If a plant is selected in inventory → plant it
+    // Plant selected → place it
     if (selectedPlant) {
       let newGarden;
       if (existingIdx >= 0) {
-        // Replace existing plant
         newGarden = garden.map((t, i) =>
           i === existingIdx ? { ...t, plant: selectedPlant } : t
         );
@@ -225,12 +273,12 @@ export default function Garden() {
         await apiUpdateGarden(newGarden, getToken);
       } catch (e) {
         showToast("❌ " + e.message);
-        setGarden(garden); // revert
+        setGarden(garden);
       }
       return;
     }
 
-    // If tile has a plant → select it for deletion
+    // Tile has a plant → select it for deletion
     if (existingIdx >= 0) {
       setSelectedTile({ row, col });
     }
@@ -308,7 +356,7 @@ export default function Garden() {
     }
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Not logged in ───────────────────────────────────────────────────────────
   if (!isLoggedIn) {
     return (
       <div className="card r2" style={{ textAlign: "center", padding: "24px" }}>
@@ -372,10 +420,10 @@ export default function Garden() {
       {/* Instruction */}
       <div style={{ fontSize: 12, color: "rgba(122,90,58,0.65)", marginTop: 6, textAlign: "center" }}>
         {selectedPlant
-          ? `Click a tile to plant ${selectedPlant}`
+          ? `🌱 Click a tile to plant ${selectedPlant} — click again to deselect`
           : selectedTile
-          ? "Tile selected — delete or click elsewhere to deselect"
-          : "Select a plant from inventory, then click a tile"}
+          ? "Tile selected — press Delete Plant or click elsewhere to deselect"
+          : "Select a plant from inventory, then click a tile to plant it"}
       </div>
 
       {/* 3D Isometric Board */}
@@ -393,7 +441,12 @@ export default function Garden() {
         <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
           <button
             className="btn"
-            style={{ background: "#fde8e8", borderColor: "#e57373", color: "#c0392b", fontSize: 13 }}
+            style={{
+              background: "#fde8e8",
+              borderColor: "#e57373",
+              color: "#c0392b",
+              fontSize: 13,
+            }}
             onClick={handleDeletePlant}
           >
             🗑️ Delete Plant
@@ -402,7 +455,7 @@ export default function Garden() {
       )}
 
       {/* Inventory */}
-      <div className="sectionTitle">🎒 Inventory</div>
+      <div className="sectionTitle" style={{ marginTop: 12 }}>🎒 Inventory</div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
         {inventory.map((plant) => {
           const key = normalizePlant(plant);
@@ -421,50 +474,60 @@ export default function Garden() {
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                transition: "transform 0.1s",
+                transition: "transform 0.1s, background 0.12s",
                 transform: isActive ? "scale(1.08)" : "scale(1)",
+                boxShadow: isActive ? "0 3px 0 rgba(122,90,58,0.15)" : "none",
               }}
             >
-              <div style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{
+                width: 36, height: 36,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
                 {PLANT_ART[key]}
               </div>
             </div>
           );
         })}
+        {inventory.length === 0 && (
+          <div className="meta">No plants yet — buy some below!</div>
+        )}
       </div>
 
       {/* Shop */}
       <div className="sectionTitle">🛒 Eco Shop</div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+
         {/* Expand row */}
         <div style={shopCardStyle}>
-          <div style={{ fontSize: 12, fontWeight: 900, textAlign: "center" }}>Expand Row</div>
+          <div style={{ fontSize: 20 }}>➕</div>
+          <div style={{ fontSize: 12, fontWeight: 900, textAlign: "center" }}>Add Row</div>
           <div style={{ fontSize: 11, color: "rgba(122,90,58,0.6)", textAlign: "center" }}>
-            {rows}/{MAX_ROWS} rows
+            {rows}/{MAX_ROWS}
           </div>
           <button
             className="btn primary"
-            style={{ fontSize: 12, padding: "6px 10px", width: "100%", justifyContent: "center" }}
+            style={{ fontSize: 11, padding: "5px 8px", width: "100%", justifyContent: "center" }}
             onClick={handleBuyRow}
             disabled={busy || rows >= MAX_ROWS}
           >
-            {rows >= MAX_ROWS ? "Max" : `+Row (${ROW_COST} 🪙)`}
+            {rows >= MAX_ROWS ? "Max ✓" : `${ROW_COST} 🪙`}
           </button>
         </div>
 
         {/* Expand col */}
         <div style={shopCardStyle}>
-          <div style={{ fontSize: 12, fontWeight: 900, textAlign: "center" }}>Expand Col</div>
+          <div style={{ fontSize: 20 }}>➕</div>
+          <div style={{ fontSize: 12, fontWeight: 900, textAlign: "center" }}>Add Col</div>
           <div style={{ fontSize: 11, color: "rgba(122,90,58,0.6)", textAlign: "center" }}>
-            {cols}/{MAX_COLS} cols
+            {cols}/{MAX_COLS}
           </div>
           <button
             className="btn primary"
-            style={{ fontSize: 12, padding: "6px 10px", width: "100%", justifyContent: "center" }}
+            style={{ fontSize: 11, padding: "5px 8px", width: "100%", justifyContent: "center" }}
             onClick={handleBuyCol}
             disabled={busy || cols >= MAX_COLS}
           >
-            {cols >= MAX_COLS ? "Max" : `+Col (${COL_COST} 🪙)`}
+            {cols >= MAX_COLS ? "Max ✓" : `${COL_COST} 🪙`}
           </button>
         </div>
 
@@ -473,14 +536,19 @@ export default function Garden() {
           const owned = inventory.includes(plant);
           return (
             <div key={plant} style={shopCardStyle}>
-              <div style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{
+                width: 40, height: 40,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
                 {PLANT_ART[plant]}
               </div>
               <div style={{ fontSize: 11, fontWeight: 900, textAlign: "center" }}>{label}</div>
               <button
                 className={`btn ${owned ? "" : "primary"}`}
-                style={{ fontSize: 11, padding: "5px 8px", width: "100%", justifyContent: "center",
-                  opacity: owned ? 0.6 : 1 }}
+                style={{
+                  fontSize: 11, padding: "5px 8px", width: "100%",
+                  justifyContent: "center", opacity: owned ? 0.65 : 1,
+                }}
                 onClick={() => !owned && handleBuyPlant(plant, cost)}
                 disabled={busy || owned}
               >
@@ -503,5 +571,5 @@ const shopCardStyle = {
   flexDirection: "column",
   alignItems: "center",
   gap: 6,
-  minWidth: 90,
+  minWidth: 88,
 };

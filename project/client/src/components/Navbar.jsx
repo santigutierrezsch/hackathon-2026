@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { to: "/leaderboard", label: "🏆 Leaderboard" },
   { to: "/social",      label: "👥 Social"      },
   { to: "/resources",   label: "🌿 Resources"   },
+  { to: "/tools",       label: "🛠️ Tools"       },
 ];
 
 export default function Navbar() {
