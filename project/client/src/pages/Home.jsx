@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { fetchMarkets } from "../utils/api.js";
 import { isOpenNow } from "../utils/isOpenNow.js";
 
+// 1. IMPORT YOUR GARDEN HERE 🪴
+import Garden from "../components/Garden.jsx";
+
 export default function Home() {
   const [markets, setMarkets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +47,13 @@ export default function Home() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* 2. DROP THE GARDEN RIGHT HERE! 🪴 
+          I added a little margin so it doesn't bump into your markets grid. 
+      */}
+      <div style={{ margin: '40px 0' }}>
+        <Garden />
       </div>
 
       {loading && <div className="card">Loading markets…</div>}

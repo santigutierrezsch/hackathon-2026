@@ -19,6 +19,16 @@
       "xp": 0,
       "webhook_url": null,
       "created_at": 1772301941
+    },
+    {
+      "id": "QrNsXmqXM4NfW1WZyC3Aj8GTqKl1",
+      "username": "Buggy",
+      "email": "connor.kasper2@gmail.com",
+      "display_name": "Connor Kasper",
+      "photo_url": "https://lh3.googleusercontent.com/a/ACg8ocJeRJ2pMIT0Bv-QQyxXUS66BmhBp7OFNZNgG2XsKGVi-PrqAkHw=s96-c",
+      "xp": 800000,
+      "webhook_url": null,
+      "created_at": 1772300216
     }
   ],
   "friend_requests": [],
@@ -26,6 +36,16 @@
   "activities": [
     {
       "id": 1,
+      "user_id": "QrNsXmqXM4NfW1WZyC3Aj8GTqKl1",
+      "type": "uber_ev",
+      "xp_earned": 800000,
+      "details": {
+        "distance": "100000"
+      },
+      "created_at": 1772300260
+    },
+    {
+      "id": 2,
       "user_id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
       "type": "farmers_market",
       "xp_earned": 50,
@@ -33,7 +53,7 @@
       "created_at": 1772301828
     },
     {
-      "id": 2,
+      "id": 3,
       "user_id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
       "type": "carpool",
       "xp_earned": 5,
@@ -44,7 +64,7 @@
       "created_at": 1772301830
     },
     {
-      "id": 3,
+      "id": 4,
       "user_id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
       "type": "recycling",
       "xp_earned": 2000,
@@ -56,7 +76,7 @@
       "created_at": 1772301834
     },
     {
-      "id": 4,
+      "id": 5,
       "user_id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
       "type": "uber_ev",
       "xp_earned": 1,
@@ -66,7 +86,7 @@
       "created_at": 1772301839
     },
     {
-      "id": 5,
+      "id": 6,
       "user_id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
       "type": "uber_ev",
       "xp_earned": 8000000,
@@ -78,6 +98,6 @@
   ],
   "_seq": {
     "friend_requests": 0,
-    "activities": 5
+    "activities": 6
   }
 }
