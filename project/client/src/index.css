@@ -263,3 +263,51 @@ pre.code{ white-space: pre-wrap; word-break: break-word; }
 .recharts-cartesian-axis-tick-value{
   fill: rgba(122,90,58,0.70) !important;
 }
+
+/* ── Layout helpers ─────────────────────────────────────────────────────────── */
+
+.row{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.space{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* ── Card typography ─────────────────────────────────────────────────────────── */
+
+.title{
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+}
+
+.meta{
+  font-size: 13px;
+  color: rgba(122,90,58,0.78);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Navbar spacing fix ──────────────────────────────────────────────────────── */
+
+/* Push page content below sticky navbar */
+.container{
+  padding-top: 20px;
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
