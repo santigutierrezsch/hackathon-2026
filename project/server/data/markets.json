@@ -1,0 +1,10 @@
+[
+  {
+    "id": "naperville-market",
+    "name": "Naperville Farmers Market",
+    "address": "5th Ave Station, Naperville, IL",
+    "coordinates": [-88.1473, 41.7767],
+    "daysOpen": ["Saturday"],
+    "hours": { "open": "07:00", "close": "12:00" }
+  }
+]
