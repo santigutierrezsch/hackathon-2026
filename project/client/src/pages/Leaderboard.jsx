@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiGlobalLeaderboard, apiFriendsLeaderboard } from "../utils/api.js";
 import { getXPTier } from "../utils/xp.js";
@@ -29,28 +30,32 @@ function LeaderboardRow({ entry, isMe }) {
         {entry.rank <= 3 ? MEDALS[entry.rank - 1] : `#${entry.rank}`}
       </div>
 
-      {/* Avatar */}
-      {entry.photo_url ? (
-        <img src={entry.photo_url} alt="avatar"
-          style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover",
-            border: "2px solid var(--border)", flexShrink: 0 }} />
-      ) : (
-        <div style={{
-          width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
-          background: "var(--blue)", border: "2px solid var(--border)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontWeight: 900, fontSize: 14,
-        }}>
-          {(entry.username || "?")[0].toUpperCase()}
-        </div>
-      )}
+      {/* Avatar — clickable */}
+      <Link to={`/user/${entry.username}`} style={{ flexShrink: 0, textDecoration: "none" }}>
+        {entry.photo_url ? (
+          <img src={entry.photo_url} alt="avatar"
+            style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover",
+              border: "2px solid var(--border)", display: "block" }} />
+        ) : (
+          <div style={{
+            width: 36, height: 36, borderRadius: "50%",
+            background: "var(--blue)", border: "2px solid var(--border)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontWeight: 900, fontSize: 14,
+          }}>
+            {(entry.username || "?")[0].toUpperCase()}
+          </div>
+        )}
+      </Link>
 
-      {/* Name + tier */}
+      {/* Name + tier — clickable */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 900, fontSize: 15, display: "flex", alignItems: "center", gap: 6 }}>
-          {entry.username}
-          {isMe && <span className="badge ok" style={{ fontSize: 10, padding: "2px 7px" }}>YOU</span>}
-        </div>
+        <Link to={`/user/${entry.username}`} style={{ textDecoration: "none", color: "inherit" }}>
+          <div style={{ fontWeight: 900, fontSize: 15, display: "flex", alignItems: "center", gap: 6 }}>
+            {entry.username}
+            {isMe && <span className="badge ok" style={{ fontSize: 10, padding: "2px 7px" }}>YOU</span>}
+          </div>
+        </Link>
         <div style={{ fontSize: 12, color: tier.color, fontWeight: 800 }}>{tier.label}</div>
       </div>
 
@@ -188,7 +193,7 @@ export default function Leaderboard() {
           {!loadingF && !errF && friends.length === 0 && (
             <div className="meta">
               No friends added yet. Head to the{" "}
-              <a href="/friends" style={{ fontWeight: 900 }}>Friends page</a> to add some! 👥
+              <Link to="/social" style={{ fontWeight: 900 }}>Social page</Link> to add some! 👥
             </div>
           )}
 

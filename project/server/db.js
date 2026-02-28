@@ -19,7 +19,7 @@ function normalizeUsername(value) {
 
 // ── Default shape ─────────────────────────────────────────────────────────────
 const DEFAULT = {
-  users:           [],   // { id, username, email, display_name, photo_url, xp, webhook_url, created_at }
+  users:           [],   // { id, username, email, display_name, photo_url, xp, coins, garden_rows, garden_cols, garden, inventory, webhook_url, created_at }
   friend_requests: [],   // { id, from_user, to_user, status, created_at }
   friends:         [],   // { user1, user2, created_at }
   activities:      [],   // { id, user_id, type, xp_earned, details, created_at }
@@ -30,7 +30,20 @@ const DEFAULT = {
 function load() {
   try {
     if (fs.existsSync(DB_FILE)) {
-      return JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+      const data = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+      // Migrate existing users: add missing coins/garden fields
+      let dirty = false;
+      (data.users || []).forEach(u => {
+        if (u.coins === undefined)       { u.coins = u.xp || 0;          dirty = true; }
+        if (u.garden_rows === undefined) { u.garden_rows = 2;             dirty = true; }
+        if (u.garden_cols === undefined) { u.garden_cols = 2;             dirty = true; }
+        if (u.garden === undefined)      { u.garden = [];                 dirty = true; }
+        if (u.inventory === undefined)   { u.inventory = ["🌱", "🌻"];   dirty = true; }
+      });
+      if (dirty) {
+        try { fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2)); } catch {}
+      }
+      return data;
     }
   } catch (e) {
     console.error("db: failed to load db.json, starting fresh:", e.message);
@@ -67,8 +80,13 @@ const users = {
     return _store.users.find(u => (u.username || "").toLowerCase() === normalized) || null;
   },
   create({ id, email, display_name, photo_url }) {
-    const user = { id, username: null, email: email || null, display_name: display_name || null,
-                   photo_url: photo_url || null, xp: 0, webhook_url: null, created_at: now() };
+    const user = {
+      id, username: null, email: email || null, display_name: display_name || null,
+      photo_url: photo_url || null, xp: 0, coins: 0,
+      garden_rows: 2, garden_cols: 2, garden: [],
+      inventory: ["🌱", "🌻"],
+      webhook_url: null, created_at: now()
+    };
     _store.users.push(user);
     save();
     return user;
@@ -92,7 +110,45 @@ const users = {
   addXP(id, amount) {
     const u = _store.users.find(u => u.id === id);
     if (!u) return null;
-    u.xp = (u.xp || 0) + amount;
+    u.xp    = (u.xp    || 0) + amount;
+    u.coins = (u.coins || 0) + amount;  // XP earned = coins earned
+    save();
+    return u;
+  },
+  addCoins(id, amount) {
+    const u = _store.users.find(u => u.id === id);
+    if (!u) return null;
+    u.coins = (u.coins || 0) + amount;
+    save();
+    return u;
+  },
+  spendCoins(id, amount) {
+    const u = _store.users.find(u => u.id === id);
+    if (!u) return null;
+    if ((u.coins || 0) < amount) return false; // insufficient
+    u.coins = (u.coins || 0) - amount;
+    save();
+    return u;
+  },
+  updateGarden(id, garden) {
+    const u = _store.users.find(u => u.id === id);
+    if (!u) return null;
+    u.garden = garden;
+    save();
+    return u;
+  },
+  updateInventory(id, inventory) {
+    const u = _store.users.find(u => u.id === id);
+    if (!u) return null;
+    u.inventory = inventory;
+    save();
+    return u;
+  },
+  setGardenSize(id, rows, cols) {
+    const u = _store.users.find(u => u.id === id);
+    if (!u) return null;
+    u.garden_rows = rows;
+    u.garden_cols = cols;
     save();
     return u;
   },

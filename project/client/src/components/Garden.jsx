@@ -1,215 +1,507 @@
-import React, { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
-import { db, auth } from '../firebase'; // ✅ Fixed path to match your screenshot!
-import { PLANT_ART } from './PlantGraphics'; // Adjust path if you saved it in assets!
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../context/AuthContext.jsx";
+import {
+  apiGetGarden,
+  apiUpdateGarden,
+  apiBuyGardenRow,
+  apiBuyGardenCol,
+  apiBuyGardenPlant,
+} from "../utils/api.js";
+import { PLANT_ART } from "./PlantGraphics.jsx";
 
-const Garden = () => {
-  // Database & User State
-  const [user, setUser] = useState(null);
-  const [garden, setGarden] = useState(Array(9).fill(null));
-  const [inventory, setInventory] = useState(['🌱', '🌻']);
-  const [coins, setCoins] = useState(0);
-  
-  // UI State
-  const [selectedPlant, setSelectedPlant] = useState(null);
-  const [loading, setLoading] = useState(true);
+// ── Constants ─────────────────────────────────────────────────────────────────
+const MAX_ROWS = 8;
+const MAX_COLS = 8;
+const ROW_COST = 50;
+const COL_COST = 50;
 
-  // 1. AUTO-DETECT USER & FETCH FIREBASE DATA
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log("Auth Status:", currentUser ? "Logged In" : "Not Logged In");
-      setUser(currentUser);
-      
-      if (currentUser?.email) {
-        try {
-          const userRef = doc(db, "users", currentUser.email);
-          const docSnap = await getDoc(userRef);
+const SHOP_PLANTS = [
+  { plant: "🍄", cost: 20,  label: "Mushroom"  },
+  { plant: "🌵", cost: 30,  label: "Cactus"    },
+  { plant: "🌲", cost: 50,  label: "Pine Tree"  },
+  { plant: "🌸", cost: 100, label: "Cherry Blossom" },
+];
 
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setGarden(data.garden || Array(9).fill(null));
-            setInventory(data.inventory || ['🌱', '🌻']);
-            setCoins(data.coins !== undefined ? data.coins : 0);
-          } else {
-            // First time opening the garden! Give them the starter pack.
-            await setDoc(userRef, {
-              email: currentUser.email,
-              garden: Array(9).fill(null),
-              inventory: ['🌱', '🌻'],
-              coins: 100 
-            });
-            setCoins(100);
-          }
-        } catch (error) {
-          console.error("🔥 FIREBASE ERROR:", error.message);
-        }
-      }
-      // This will now ALWAYS run, even if there is an error
-      setLoading(false); 
-    });
+// Normalize a plant key — handles legacy emoji or unknown values
+function normalizePlant(key) {
+  if (!key) return null;
+  const known = ["🌱", "🌻", "🍄", "🌵", "🌲", "🌸"];
+  if (known.includes(key)) return key;
+  // Try to find by string match
+  const found = known.find(k => String(key).includes(k));
+  return found || null;
+}
 
-    return () => unsubscribe(); 
-  }, []);
+// ── Read-only isometric garden (for public profiles) ─────────────────────────
+export function GardenReadOnly({ garden = [], garden_rows = 2, garden_cols = 2 }) {
+  return (
+    <IsometricBoard
+      rows={garden_rows}
+      cols={garden_cols}
+      garden={garden}
+      selectedPlant={null}
+      selectedTile={null}
+      onTileClick={() => {}}
+      readOnly
+    />
+  );
+}
 
-  // 2. HANDLE PLANTING (Saves instantly to Firebase)
-  const handlePlanting = async (index) => {
-    if (!selectedPlant || !user?.email) return;
-    
-    const newGarden = [...garden];
-    newGarden[index] = selectedPlant;
-    setGarden(newGarden);
+// ── Isometric Board ───────────────────────────────────────────────────────────
+function IsometricBoard({ rows, cols, garden, selectedPlant, selectedTile, onTileClick, readOnly }) {
+  const tileW = 72;
+  const tileH = 36;
+  const tileDepth = 14;
 
-    const userRef = doc(db, "users", user.email);
-    await updateDoc(userRef, { garden: newGarden });
-  };
-
-  // 3. BUY A ROW (Expands Grid)
-  const handleBuyRow = async () => {
-    if (!user?.email) return alert("Please log in to use the shop!");
-    const ROW_COST = 50;
-
-    if (coins < ROW_COST) return alert("Not enough coins! Do some eco-quests!");
-
-    const newCoins = coins - ROW_COST;
-    const newGarden = [...garden, null, null, null]; // Add 3 new dirt patches
-
-    setCoins(newCoins);
-    setGarden(newGarden);
-
-    const userRef = doc(db, "users", user.email);
-    await updateDoc(userRef, { coins: newCoins, garden: newGarden });
-  };
-
-  // 4. BUY DECORATION (Adds to Inventory)
-  const handleBuyDeco = async (item, cost) => {
-    if (!user?.email) return alert("Please log in to use the shop!");
-    if (coins < cost) return alert("Not enough coins!");
-    if (inventory.includes(item)) return alert("You already own this!");
-
-    const newCoins = coins - cost;
-    const newInventory = [...inventory, item];
-
-    setCoins(newCoins);
-    setInventory(newInventory);
-
-    const userRef = doc(db, "users", user.email);
-    await updateDoc(userRef, { coins: newCoins, inventory: newInventory });
-  };
-
-  // STYLES
-  // UPGRADED STYLES ✨
-  const styles = {
-    container: { maxWidth: '700px', margin: '0 auto', textAlign: 'center', fontFamily: 'system-ui', padding: '20px' },
-    gridWrapper: { perspective: '1000px', margin: '40px auto', width: 'fit-content' },
-    grid: { 
-      display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', 
-      background: '#8D6E63', padding: '20px', borderRadius: '15px',
-      boxShadow: '-15px 15px 0px rgba(0,0,0,0.1)', transform: 'rotateX(55deg) rotateZ(-45deg)', 
-      transformStyle: 'preserve-3d', transition: 'all 0.3s ease'
-    },
-    dirtPatch: { 
-      width: '80px', height: '80px', background: '#795548', borderRadius: '10px', 
-      display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', 
-      boxShadow: 'inset 0 0 15px rgba(0,0,0,0.5), -4px 4px 0 #5D4037', transformStyle: 'preserve-3d'
-    },
-    plant: { display: 'flex', justifyContent: 'center', alignItems: 'center', transform: 'rotateZ(45deg) rotateX(-55deg) translateY(-15px)', pointerEvents: 'none' },
-    
-    // NEW SHOP STYLES 👇
-    shopCard: { 
-      background: '#ffffff', padding: '15px', borderRadius: '16px', 
-      boxShadow: '0 4px 12px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', 
-      alignItems: 'center', gap: '12px', minWidth: '110px', border: '1px solid #f0f0f0',
-      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-    },
-    plantPreviewBox: {
-      background: '#f8f9fa', width: '70px', height: '70px', borderRadius: '12px',
-      display: 'flex', justifyContent: 'center', alignItems: 'center',
-      boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.05)' // Makes it look like a little display case
-    },
-    btn: { 
-      background: 'linear-gradient(135deg, #4CAF50, #2E7D32)', color: 'white', 
-      border: 'none', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', 
-      fontWeight: 'bold', fontSize: '14px', width: '100%',
-      boxShadow: '0 4px 8px rgba(76, 175, 80, 0.3)', transition: 'transform 0.1s'
-    },
-    btnDisabled: { 
-      background: '#e0e0e0', color: '#9e9e9e', border: 'none', padding: '10px 20px', 
-      borderRadius: '20px', fontWeight: 'bold', fontSize: '14px', width: '100%', cursor: 'not-allowed'
-    }
-  };
+  const boardW = (rows + cols) * (tileW / 2);
+  const boardH = (rows + cols) * (tileH / 2) + tileDepth + 80;
 
   return (
-    <div style={styles.container}>
-      {/* HEADER & COINS */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>🪴 Your Iso-Garden</h2>
-        <div style={{ background: '#FFD700', color: '#B8860B', padding: '8px 15px', borderRadius: '20px', fontWeight: 'bold', fontSize: '18px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-          {coins} 🪙
-        </div>
-      </div>
+    <div style={{
+      width: "100%",
+      overflowX: "auto",
+      display: "flex",
+      justifyContent: "center",
+      padding: "20px 0 10px",
+    }}>
+      <div style={{
+        position: "relative",
+        width: boardW,
+        height: boardH,
+        margin: "0 auto",
+      }}>
+        {Array.from({ length: rows }, (_, r) =>
+          Array.from({ length: cols }, (_, c) => {
+            const x = (c - r) * (tileW / 2) + boardW / 2 - tileW / 2;
+            const y = (c + r) * (tileH / 2);
 
-      <p style={{color: '#666', marginTop: '10px'}}>
-        {selectedPlant ? `Click the dirt to plant ${selectedPlant}!` : "Select a plant to begin."}
-      </p>
+            const tile = garden.find(t => t.row === r && t.col === c);
+            const plantKey = tile ? normalizePlant(tile.plant) : null;
+            const isSelected = selectedTile && selectedTile.row === r && selectedTile.col === c;
 
-      {/* 3D GARDEN BOARD */}
-      <div style={styles.gridWrapper}>
-        <div style={styles.grid}>
-          {garden.map((plant, index) => (
-            <div key={index} style={styles.dirtPatch} onClick={() => handlePlanting(index)}>
-              {plant && <div style={styles.plant}>{PLANT_ART[plant] || plant}</div>}
-            </div>
-          ))}
-        </div>
-      </div>
+            return (
+              <div
+                key={`${r}-${c}`}
+                onClick={() => !readOnly && onTileClick(r, c)}
+                style={{
+                  position: "absolute",
+                  left: x,
+                  top: y,
+                  width: tileW,
+                  height: tileH + tileDepth,
+                  cursor: readOnly ? "default" : "pointer",
+                  zIndex: r + c,
+                }}
+              >
+                {/* Dirt tile top face */}
+                <div style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: tileW,
+                  height: tileH,
+                  background: isSelected
+                    ? "linear-gradient(135deg, #a8d5a2, #7ec87a)"
+                    : "linear-gradient(135deg, #8B6347, #6B4423)",
+                  clipPath: "polygon(50% 0%, 100% 25%, 50% 50%, 0% 25%)",
+                  boxSizing: "border-box",
+                  transition: "background 0.15s",
+                }} />
+                {/* Dirt tile left face */}
+                <div style={{
+                  position: "absolute",
+                  top: tileH / 2,
+                  left: 0,
+                  width: tileW / 2,
+                  height: tileDepth + tileH / 2,
+                  background: isSelected ? "#5a9e55" : "#4a2e10",
+                  clipPath: "polygon(0% 0%, 50% 50%, 50% 100%, 0% 50%)",
+                }} />
+                {/* Dirt tile right face */}
+                <div style={{
+                  position: "absolute",
+                  top: tileH / 2,
+                  left: tileW / 2,
+                  width: tileW / 2,
+                  height: tileDepth + tileH / 2,
+                  background: isSelected ? "#4a8e45" : "#3a1e08",
+                  clipPath: "polygon(0% 50%, 50% 0%, 100% 0%, 50% 50%, 50% 100%, 0% 50%)",
+                }} />
 
-      {/* INVENTORY */}
-      <h3>🎒 Your Inventory</h3>
-      <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '30px' }}>
-        {inventory.map((plant, i) => (
-          <div 
-            key={i} 
-            style={{ fontSize: '30px', padding: '10px', border: selectedPlant === plant ? '3px solid #4CAF50' : '3px solid #eee', borderRadius: '15px', cursor: 'pointer', background: selectedPlant === plant ? '#C8E6C9' : '#fff', transition: 'transform 0.1s', transform: selectedPlant === plant ? 'scale(1.1)' : 'scale(1)' }} 
-            onClick={() => setSelectedPlant(plant === selectedPlant ? null : plant)}
-          >
-            {PLANT_ART[plant] || plant}
-          </div>
-        ))}
+                {/* Plant — rendered upright above the tile */}
+                {plantKey && PLANT_ART[plantKey] && (
+                  <div style={{
+                    position: "absolute",
+                    top: -44,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    pointerEvents: "none",
+                    zIndex: 10,
+                    filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.3))",
+                  }}>
+                    {PLANT_ART[plantKey]}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
-
-      {/* SHOP */}
-      <h3>🛒 Eco Shop</h3>
-      <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        
-        {/* Buy Row Button */}
-        <div style={styles.shopCard}>
-          <span style={{fontWeight: 'bold'}}>Expand Land</span>
-          <button style={styles.btn} onClick={handleBuyRow}>Buy Row (50 🪙)</button>
-        </div>
-        
-        {/* Deco Items to Buy */}
-        {[
-          { item: '🍄', price: 20 },
-          { item: '🌵', price: 30 },
-          { item: '🌲', price: 50 },
-          { item: '🌸', price: 100 }
-        ].map((shopItem) => (
-          <div key={shopItem.item} style={styles.shopCard}>
-            <span style={{ fontSize: '28px' }}>{PLANT_ART[shopItem.item] || shopItem.item}</span>
-            <button 
-              style={{...styles.btn, background: inventory.includes(shopItem.item) ? '#ccc' : '#4CAF50', cursor: inventory.includes(shopItem.item) ? 'not-allowed' : 'pointer'}} 
-              onClick={() => handleBuyDeco(shopItem.item, shopItem.price)}
-              disabled={inventory.includes(shopItem.item)}
-            >
-              {inventory.includes(shopItem.item) ? 'Owned' : `Buy (${shopItem.price} 🪙)`}
-            </button>
-          </div>
-        ))}
-      </div>
-      
     </div>
   );
-};
+}
 
-export default Garden;
+// ── Main Garden Component ─────────────────────────────────────────────────────
+export default function Garden() {
+  const { isLoggedIn, getToken, dbUser, refreshDbUser } = useAuth();
+
+  const [garden,      setGarden]      = useState([]);
+  const [rows,        setRows]        = useState(2);
+  const [cols,        setCols]        = useState(2);
+  const [inventory,   setInventory]   = useState(["🌱", "🌻"]);
+  const [coins,       setCoins]       = useState(0);
+  const [loading,     setLoading]     = useState(true);
+  const [busy,        setBusy]        = useState(false);
+  const [toast,       setToast]       = useState(null);
+
+  const [selectedPlant, setSelectedPlant] = useState(null);
+  const [selectedTile,  setSelectedTile]  = useState(null); // {row, col}
+
+  // ── Load garden from backend ────────────────────────────────────────────────
+  const loadGarden = useCallback(async () => {
+    if (!isLoggedIn) { setLoading(false); return; }
+    try {
+      setLoading(true);
+      const data = await apiGetGarden(getToken);
+      setGarden(data.garden      || []);
+      setRows(data.garden_rows   || 2);
+      setCols(data.garden_cols   || 2);
+      setInventory(data.inventory || ["🌱", "🌻"]);
+      setCoins(data.coins        || 0);
+    } catch (e) {
+      console.error("Garden load error:", e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [isLoggedIn, getToken]);
+
+  useEffect(() => { loadGarden(); }, [loadGarden]);
+
+  // Sync coins from dbUser when it refreshes
+  useEffect(() => {
+    if (dbUser?.coins !== undefined) setCoins(dbUser.coins);
+  }, [dbUser?.coins]);
+
+  function showToast(msg) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2800);
+  }
+
+  // ── Tile click handler ──────────────────────────────────────────────────────
+  async function handleTileClick(row, col) {
+    if (!isLoggedIn) return;
+
+    const existingIdx = garden.findIndex(t => t.row === row && t.col === col);
+
+    // If a tile is already selected (for deletion)
+    if (selectedTile && selectedTile.row === row && selectedTile.col === col) {
+      setSelectedTile(null);
+      return;
+    }
+
+    // If a plant is selected in inventory → plant it
+    if (selectedPlant) {
+      let newGarden;
+      if (existingIdx >= 0) {
+        // Replace existing plant
+        newGarden = garden.map((t, i) =>
+          i === existingIdx ? { ...t, plant: selectedPlant } : t
+        );
+      } else {
+        newGarden = [...garden, { row, col, plant: selectedPlant }];
+      }
+      setGarden(newGarden);
+      try {
+        await apiUpdateGarden(newGarden, getToken);
+      } catch (e) {
+        showToast("❌ " + e.message);
+        setGarden(garden); // revert
+      }
+      return;
+    }
+
+    // If tile has a plant → select it for deletion
+    if (existingIdx >= 0) {
+      setSelectedTile({ row, col });
+    }
+  }
+
+  // ── Delete selected tile ────────────────────────────────────────────────────
+  async function handleDeletePlant() {
+    if (!selectedTile) return;
+    const newGarden = garden.filter(
+      t => !(t.row === selectedTile.row && t.col === selectedTile.col)
+    );
+    setGarden(newGarden);
+    setSelectedTile(null);
+    try {
+      await apiUpdateGarden(newGarden, getToken);
+    } catch (e) {
+      showToast("❌ " + e.message);
+      setGarden(garden);
+    }
+  }
+
+  // ── Buy row ─────────────────────────────────────────────────────────────────
+  async function handleBuyRow() {
+    if (rows >= MAX_ROWS) return showToast(`Max rows reached (${MAX_ROWS})`);
+    if (coins < ROW_COST) return showToast(`Need ${ROW_COST} 🪙 to buy a row`);
+    setBusy(true);
+    try {
+      const data = await apiBuyGardenRow(getToken);
+      setRows(data.garden_rows);
+      setCols(data.garden_cols);
+      setCoins(data.coins);
+      await refreshDbUser();
+      showToast(`✅ ${data.message}`);
+    } catch (e) {
+      showToast("❌ " + e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ── Buy column ──────────────────────────────────────────────────────────────
+  async function handleBuyCol() {
+    if (cols >= MAX_COLS) return showToast(`Max columns reached (${MAX_COLS})`);
+    if (coins < COL_COST) return showToast(`Need ${COL_COST} 🪙 to buy a column`);
+    setBusy(true);
+    try {
+      const data = await apiBuyGardenCol(getToken);
+      setRows(data.garden_rows);
+      setCols(data.garden_cols);
+      setCoins(data.coins);
+      await refreshDbUser();
+      showToast(`✅ ${data.message}`);
+    } catch (e) {
+      showToast("❌ " + e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ── Buy plant ───────────────────────────────────────────────────────────────
+  async function handleBuyPlant(plant, cost) {
+    if (inventory.includes(plant)) return showToast("Already owned!");
+    if (coins < cost) return showToast(`Need ${cost} 🪙`);
+    setBusy(true);
+    try {
+      const data = await apiBuyGardenPlant(plant, cost, getToken);
+      setInventory(data.inventory);
+      setCoins(data.coins);
+      await refreshDbUser();
+      showToast(`✅ ${plant} added to inventory!`);
+    } catch (e) {
+      showToast("❌ " + e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+  if (!isLoggedIn) {
+    return (
+      <div className="card r2" style={{ textAlign: "center", padding: "24px" }}>
+        <div style={{ fontSize: 36, marginBottom: 8 }}>🪴</div>
+        <div className="sectionTitle">Your Iso-Garden</div>
+        <p className="meta" style={{ textAlign: "center" }}>
+          Sign in to grow your isometric garden!
+        </p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="card r2" style={{ textAlign: "center", padding: "24px" }}>
+        <div className="meta">Loading garden…</div>
+      </div>
+    );
+  }
+
+  const selectedTileHasPlant = selectedTile &&
+    garden.some(t => t.row === selectedTile.row && t.col === selectedTile.col);
+
+  return (
+    <div className="card r2" style={{ position: "relative" }}>
+      <div className="tape tl" />
+      <div className="tape tr" />
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: "absolute", top: -44, left: "50%", transform: "translateX(-50%)",
+          background: "var(--mint)", border: "2px solid var(--border)",
+          borderRadius: 14, padding: "8px 18px",
+          fontWeight: 900, fontSize: 13, whiteSpace: "nowrap",
+          boxShadow: "0 4px 0 rgba(122,90,58,0.12)", zIndex: 50,
+        }}>
+          {toast}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="space" style={{ alignItems: "center" }}>
+        <div>
+          <div className="sectionTitle" style={{ margin: 0 }}>🪴 Iso-Garden</div>
+          <div style={{ fontSize: 12, color: "rgba(122,90,58,0.6)", marginTop: 2 }}>
+            {rows}×{cols} grid
+          </div>
+        </div>
+        <div style={{
+          background: "#FFD700", color: "#7a5a00",
+          padding: "6px 14px", borderRadius: 999,
+          fontWeight: 900, fontSize: 15,
+          border: "2px solid rgba(122,90,58,0.18)",
+          boxShadow: "0 3px 0 rgba(122,90,58,0.10)",
+        }}>
+          {coins.toLocaleString()} 🪙
+        </div>
+      </div>
+
+      {/* Instruction */}
+      <div style={{ fontSize: 12, color: "rgba(122,90,58,0.65)", marginTop: 6, textAlign: "center" }}>
+        {selectedPlant
+          ? `Click a tile to plant ${selectedPlant}`
+          : selectedTile
+          ? "Tile selected — delete or click elsewhere to deselect"
+          : "Select a plant from inventory, then click a tile"}
+      </div>
+
+      {/* 3D Isometric Board */}
+      <IsometricBoard
+        rows={rows}
+        cols={cols}
+        garden={garden}
+        selectedPlant={selectedPlant}
+        selectedTile={selectedTile}
+        onTileClick={handleTileClick}
+      />
+
+      {/* Delete plant button */}
+      {selectedTileHasPlant && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+          <button
+            className="btn"
+            style={{ background: "#fde8e8", borderColor: "#e57373", color: "#c0392b", fontSize: 13 }}
+            onClick={handleDeletePlant}
+          >
+            🗑️ Delete Plant
+          </button>
+        </div>
+      )}
+
+      {/* Inventory */}
+      <div className="sectionTitle">🎒 Inventory</div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+        {inventory.map((plant) => {
+          const key = normalizePlant(plant);
+          if (!key) return null;
+          const isActive = selectedPlant === key;
+          return (
+            <div
+              key={key}
+              onClick={() => setSelectedPlant(isActive ? null : key)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 14,
+                border: isActive ? "2px solid var(--brown)" : "2px solid var(--border)",
+                background: isActive ? "var(--mint)" : "var(--paper2)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                transition: "transform 0.1s",
+                transform: isActive ? "scale(1.08)" : "scale(1)",
+              }}
+            >
+              <div style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {PLANT_ART[key]}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Shop */}
+      <div className="sectionTitle">🛒 Eco Shop</div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+        {/* Expand row */}
+        <div style={shopCardStyle}>
+          <div style={{ fontSize: 12, fontWeight: 900, textAlign: "center" }}>Expand Row</div>
+          <div style={{ fontSize: 11, color: "rgba(122,90,58,0.6)", textAlign: "center" }}>
+            {rows}/{MAX_ROWS} rows
+          </div>
+          <button
+            className="btn primary"
+            style={{ fontSize: 12, padding: "6px 10px", width: "100%", justifyContent: "center" }}
+            onClick={handleBuyRow}
+            disabled={busy || rows >= MAX_ROWS}
+          >
+            {rows >= MAX_ROWS ? "Max" : `+Row (${ROW_COST} 🪙)`}
+          </button>
+        </div>
+
+        {/* Expand col */}
+        <div style={shopCardStyle}>
+          <div style={{ fontSize: 12, fontWeight: 900, textAlign: "center" }}>Expand Col</div>
+          <div style={{ fontSize: 11, color: "rgba(122,90,58,0.6)", textAlign: "center" }}>
+            {cols}/{MAX_COLS} cols
+          </div>
+          <button
+            className="btn primary"
+            style={{ fontSize: 12, padding: "6px 10px", width: "100%", justifyContent: "center" }}
+            onClick={handleBuyCol}
+            disabled={busy || cols >= MAX_COLS}
+          >
+            {cols >= MAX_COLS ? "Max" : `+Col (${COL_COST} 🪙)`}
+          </button>
+        </div>
+
+        {/* Plant shop items */}
+        {SHOP_PLANTS.map(({ plant, cost, label }) => {
+          const owned = inventory.includes(plant);
+          return (
+            <div key={plant} style={shopCardStyle}>
+              <div style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {PLANT_ART[plant]}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 900, textAlign: "center" }}>{label}</div>
+              <button
+                className={`btn ${owned ? "" : "primary"}`}
+                style={{ fontSize: 11, padding: "5px 8px", width: "100%", justifyContent: "center",
+                  opacity: owned ? 0.6 : 1 }}
+                onClick={() => !owned && handleBuyPlant(plant, cost)}
+                disabled={busy || owned}
+              >
+                {owned ? "Owned ✓" : `${cost} 🪙`}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const shopCardStyle = {
+  background: "var(--paper2)",
+  border: "2px solid var(--border)",
+  borderRadius: 14,
+  padding: "10px 12px",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 6,
+  minWidth: 90,
+};

@@ -10,6 +10,7 @@ import usersRoute       from "./routes/users.js";
 import activitiesRoute  from "./routes/activities.js";
 import friendsRoute     from "./routes/friends.js";
 import leaderboardRoute from "./routes/leaderboard.js";
+import gardenRoute      from "./routes/garden.js";
 
 // ── Firebase Admin init ───────────────────────────────────────────────────────
 // Reads FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY from .env
@@ -68,6 +69,7 @@ app.use("/api/users",       usersRoute);
 app.use("/api/activities",  activitiesRoute);
 app.use("/api/friends",     friendsRoute);
 app.use("/api/leaderboard", leaderboardRoute);
+app.use("/api/garden",      gardenRoute);
 
 app.get("/", (req, res) => res.send("EcoTracker API running"));
 

@@ -88,6 +88,38 @@ export async function apiFriendsLeaderboard(getToken) {
   return apiFetch("/api/leaderboard/friends", {}, getToken);
 }
 
+// ── Garden ────────────────────────────────────────────────────────────────────
+
+export async function apiGetGarden(getToken) {
+  return apiFetch("/api/garden", {}, getToken);
+}
+
+export async function apiUpdateGarden(garden, getToken) {
+  return apiFetch("/api/garden", {
+    method: "PUT",
+    body: JSON.stringify({ garden })
+  }, getToken);
+}
+
+export async function apiBuyGardenRow(getToken) {
+  return apiFetch("/api/garden/buy-row", { method: "POST" }, getToken);
+}
+
+export async function apiBuyGardenCol(getToken) {
+  return apiFetch("/api/garden/buy-col", { method: "POST" }, getToken);
+}
+
+export async function apiBuyGardenPlant(plant, cost, getToken) {
+  return apiFetch("/api/garden/buy-plant", {
+    method: "POST",
+    body: JSON.stringify({ plant, cost })
+  }, getToken);
+}
+
+export async function apiGetPublicGarden(username) {
+  return apiFetch(`/api/garden/${username}`);
+}
+
 // ── Friends ───────────────────────────────────────────────────────────────────
 
 export async function apiGetFriends(getToken) {

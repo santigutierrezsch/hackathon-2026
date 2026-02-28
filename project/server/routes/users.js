@@ -40,7 +40,7 @@ router.put("/me", requireAuth, (req, res) => {
 
 /**
  * GET /api/users/:username
- * Public profile — returns username, display_name, photo_url, xp.
+ * Public profile — returns username, display_name, photo_url, xp, coins, garden.
  * Does NOT expose email, webhook_url, or Firebase UID.
  */
 router.get("/:username", (req, res) => {
@@ -48,8 +48,8 @@ router.get("/:username", (req, res) => {
   if (!user) return res.status(404).json({ error: "User not found" });
 
   // Return only public fields
-  const { username, display_name, photo_url, xp, created_at } = user;
-  res.json({ user: { username, display_name, photo_url, xp, created_at } });
+  const { username, display_name, photo_url, xp, coins, garden, garden_rows, garden_cols, created_at } = user;
+  res.json({ user: { username, display_name, photo_url, xp, coins: coins || 0, garden: garden || [], garden_rows: garden_rows || 2, garden_cols: garden_cols || 2, created_at } });
 });
 
 export default router;

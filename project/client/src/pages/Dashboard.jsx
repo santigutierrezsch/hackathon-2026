@@ -238,13 +238,23 @@ export default function Dashboard() {
               {tier.label}
             </div>
           </div>
-          <div style={{ textAlign: "right" }}>
+        <div style={{ textAlign: "right" }}>
             <div className="sectionTitle">Welcome back</div>
             <div style={{ fontSize: 18, fontWeight: 900 }}>{dbUser?.username}</div>
             {dbUser?.photo_url && (
               <img src={dbUser.photo_url} alt="avatar"
                 style={{ width: 48, height: 48, borderRadius: "50%", marginTop: 8, border: "2px solid var(--border)" }} />
             )}
+            <div style={{
+              marginTop: 8,
+              background: "#FFD700", color: "#7a5a00",
+              padding: "4px 12px", borderRadius: 999,
+              fontWeight: 900, fontSize: 14,
+              border: "2px solid rgba(122,90,58,0.18)",
+              display: "inline-block",
+            }}>
+              {(dbUser?.coins || 0).toLocaleString()} 🪙
+            </div>
           </div>
         </div>
 

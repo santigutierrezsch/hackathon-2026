@@ -8,17 +8,69 @@
       "photo_url": "https://lh3.googleusercontent.com/a-/ALV-UjW43v8_WzhAJQ5hh54l1kSKPjln6n2pwpwQWMTkDhJz_JLePjEpgRjquOwleGZ94xhD9FjamqdGtUruEqSrSLQ6PhFwbh3s4MwSVzEKSrNV0AhY6A7mypTFGIZD5I3Lv4e3idIPV0t_tZjG7rFGubg9LBeOr-oySEzKPqkuzRjUpAG0QqRAhJtbDYOOAzcNun2_4miNZWEzvK2MRlV0h5aCHE0R3FjC53Q2C4MBRZZtsDCzijr4hqSau-kKfgs3SK33OLnvMoem5OiOqUM2y-E9Rn0gNRzJZw9Sr5VF7ZYca0fe9UY8EWBCXq2OCwEUTTBKiO-HGxNTeZcbMncUzEuAtIOWRTpZyea1plnZYi6IjEMUzgYStkMP8sV0Ez7wqBRw3OPpj4Hi0SYrmv02uSvR6qvH1zzY4si-dDoqPXLyWi2jFUbKRmSJeutNwDzWBl65ADh0JlWx64FM4w4nToqbQXGMiOePZMur8CBp-AZ8DZxTlnCdtpYn7pRNR_2MGe1_7B3vJxcnaMKmZ8wIoOHEbsbkJELX-DxpZr3UqOPyZ-B8LshXSNHxMOt7tlTQJooXUDtM8r8gatwPBQJ0mCnKXe6NNTQ1ZNGbqxb9ANUkpWx9sFLu16gBOmOdNk3421Z15_4eLiQ-6nY2zvKy9_SFD6H1Du6vPFttRGJEkpGELq2cwOSJhk8LsS39GL0Ovs4nfUOUo638Aeit9Um1nqPAfmoqEYOErcuLTeZFB46U21PMyKSLaJoiTOnYLQRiri628Ui3ME_ndPOzCKqMWe0SCf5fsYbit71NDAFU_PVTbWKoGf20M8vkrPWZzFvroZwJqbvO7w1paO3ly59Dukh0J7g9F2qXOOM_ovqbmn0rslLX8e6yCfvwN3cCdCGls-7b54NkBgxeLmp-VhN-fOyXVb0i6He2ThvKkbS32afhqj6MNzmsQ5jyGzd32m3Jgv90RZlz1koPFKIgOj4AoEbhd6M9uTlVpnPSLI24qWQM1d4Qe7YZsFhVOCCNjM6KFPlVf1bKNT8c01jsAx_95NuLJM50FuVdgLHmMMzUsiZdxbJ30i2c7RgO=s96-c",
       "xp": 8002206,
       "webhook_url": null,
-      "created_at": 1772301788
+      "created_at": 1772301788,
+      "coins": 8001956,
+      "garden_rows": 5,
+      "garden_cols": 4,
+      "garden": [
+        {
+          "row": 0,
+          "col": 1,
+          "plant": "🌱"
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "plant": "🌱"
+        },
+        {
+          "row": 0,
+          "col": 0,
+          "plant": "🌱"
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "plant": "🌱"
+        },
+        {
+          "row": 4,
+          "col": 2,
+          "plant": "🌻"
+        },
+        {
+          "row": 3,
+          "col": 0,
+          "plant": "🌻"
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "plant": "🌻"
+        }
+      ],
+      "inventory": [
+        "🌱",
+        "🌻"
+      ]
     },
     {
       "id": "czuabqsJ4fehJ00EpZsrRKhkyg43",
-      "username": "santi",
+      "username": "santig",
       "email": "santigutierrezsch@gmail.com",
       "display_name": "Santiago Gutierrez",
       "photo_url": "https://lh3.googleusercontent.com/a/ACg8ocIeiCrHKE2Y4dcu7Lye3hGEaMEE163ETfcvpbhovutFJDcU-w=s96-c",
       "xp": 0,
       "webhook_url": null,
-      "created_at": 1772301941
+      "created_at": 1772301941,
+      "coins": 0,
+      "garden_rows": 2,
+      "garden_cols": 2,
+      "garden": [],
+      "inventory": [
+        "🌱",
+        "🌻"
+      ]
     },
     {
       "id": "QrNsXmqXM4NfW1WZyC3Aj8GTqKl1",
@@ -28,7 +80,15 @@
       "photo_url": "https://lh3.googleusercontent.com/a/ACg8ocJeRJ2pMIT0Bv-QQyxXUS66BmhBp7OFNZNgG2XsKGVi-PrqAkHw=s96-c",
       "xp": 5572,
       "webhook_url": null,
-      "created_at": 1772309943
+      "created_at": 1772309943,
+      "coins": 5572,
+      "garden_rows": 2,
+      "garden_cols": 2,
+      "garden": [],
+      "inventory": [
+        "🌱",
+        "🌻"
+      ]
     }
   ],
   "friend_requests": [
@@ -36,11 +96,17 @@
       "id": 1,
       "from_user": "EcoBuggy",
       "to_user": "santi",
-      "status": "pending",
+      "status": "accepted",
       "created_at": 1772310616
     }
   ],
-  "friends": [],
+  "friends": [
+    {
+      "user1": "EcoBuggy",
+      "user2": "santi",
+      "created_at": 1772314130
+    }
+  ],
   "activities": [
     {
       "id": 1,
