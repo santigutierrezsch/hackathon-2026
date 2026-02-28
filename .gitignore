@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 *.env
+project/server/.env
+project/server/.env
+
