@@ -14,26 +14,40 @@ import leaderboardRoute from "./routes/leaderboard.js";
 // ── Firebase Admin init ───────────────────────────────────────────────────────
 // Reads FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY from .env
 if (!admin.apps.length) {
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY
-    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    : undefined;
+  // Handle private key: support both literal \n and actual newlines
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY || "";
+  // Strip surrounding quotes if present (common copy-paste mistake)
+  if ((privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+      (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+    privateKey = privateKey.slice(1, -1);
+  }
+  // Replace escaped newlines with real newlines
+  privateKey = privateKey.replace(/\\n/g, "\n");
+  // Trim whitespace
+  privateKey = privateKey.trim();
 
-  if (privateKey && process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId:   process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey
-      })
-    });
-    console.log("Firebase Admin initialised ✓");
+  const projectId   = (process.env.FIREBASE_PROJECT_ID   || "").trim();
+  const clientEmail = (process.env.FIREBASE_CLIENT_EMAIL || "").trim();
+
+  if (privateKey && projectId && clientEmail) {
+    try {
+      admin.initializeApp({
+        credential: admin.credential.cert({ projectId, clientEmail, privateKey })
+      });
+      console.log("✅ Firebase Admin initialised — project:", projectId);
+    } catch (e) {
+      console.error("❌ Firebase Admin init failed:", e.message);
+      admin.initializeApp({ projectId: projectId || "demo-project" });
+    }
   } else {
     console.warn(
-      "⚠️  Firebase Admin env vars missing — auth endpoints will not work.\n" +
-      "   Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY in server/.env"
+      "⚠️  Firebase Admin env vars missing or empty — auth endpoints will not work.\n" +
+      "   Required in server/.env:\n" +
+      "     FIREBASE_PROJECT_ID=" + (projectId || "(missing)") + "\n" +
+      "     FIREBASE_CLIENT_EMAIL=" + (clientEmail || "(missing)") + "\n" +
+      "     FIREBASE_PRIVATE_KEY=" + (privateKey ? "(set, length=" + privateKey.length + ")" : "(missing)")
     );
-    // Initialise with no credential so the app doesn't crash on startup
-    admin.initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID || "demo-project" });
+    admin.initializeApp({ projectId: projectId || "demo-project" });
   }
 }
 

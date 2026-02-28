@@ -24,8 +24,11 @@ export function AuthProvider({ children }) {
           if (res.ok) {
             const data = await res.json();
             setDbUser(data.user);
+          } else {
+            console.error("[auth] /api/auth/login failed — status:", res.status);
           }
-        } catch {
+        } catch (e) {
+          console.error("[auth] /api/auth/login error:", e.message);
           // Server might be offline during dev — don't crash
         }
       } else {

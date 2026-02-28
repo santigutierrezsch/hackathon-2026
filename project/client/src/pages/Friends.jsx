@@ -81,7 +81,7 @@ export default function Friends() {
 
   async function handleSendRequest(e) {
     e.preventDefault();
-    const target = searchVal.trim();
+    const target = searchVal.trim().replace(/^@+/, "");
     if (!target) return;
     setSendErr(""); setSendOk(""); setSending(true);
     try {

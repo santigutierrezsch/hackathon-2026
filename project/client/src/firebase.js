@@ -13,6 +13,11 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Diagnostic: log project ID so you can compare with server's FIREBASE_PROJECT_ID
+if (import.meta.env.DEV) {
+  console.log("[firebase] Client projectId:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
+}
+
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
