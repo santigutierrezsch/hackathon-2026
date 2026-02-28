@@ -139,7 +139,6 @@ export default function Social() {
     <div className="container">
       <div className="topbar">
         <div className="brand">
-          <div className="logo" />
           <div>
             <h1 className="h1">Social</h1>
             <p className="sub">Connect with others and compare your eco impact.</p>

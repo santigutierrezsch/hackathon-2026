@@ -259,7 +259,6 @@ export default function Home() {
           alignItems: "center",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div className="logo" style={{ width: 28, height: 28, borderRadius: 8 }} />
             <span style={{ fontWeight: 900, fontSize: 16, color: "var(--brown)" }}>EcoTracker</span>
           </div>
 

@@ -56,7 +56,7 @@ export default function Navbar() {
 
         {/* Brand */}
         <Link to="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <div className="logo" style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0 }} />
+          <div style={{borderRadius: 10, flexShrink: 0, fontSize: "2em", padding: 0}}>🌱</div>
           <span style={{ fontWeight: 900, fontSize: 18, letterSpacing: -0.4, color: "var(--brown)" }}>
             EcoTracker
           </span>

@@ -93,7 +93,6 @@ export default function Profile() {
     <div className="container" style={{ maxWidth: 700 }}>
       <div className="topbar">
         <div className="brand">
-          <div className="logo" />
           <div>
             <h1 className="h1">Profile</h1>
             <p className="sub">Your account and garden.</p>

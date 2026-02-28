@@ -35,7 +35,6 @@ export default function Resources() {
     <div className="container">
       <div className="topbar">
         <div className="brand">
-          <div className="logo" />
           <div>
             <h1 className="h1">Resources</h1>
             <p className="sub">Local markets, eco tools, and sustainability resources.</p>

@@ -283,7 +283,6 @@ export default function Tools() {
     <div className="container">
       <div className="topbar">
         <div className="brand">
-          <div className="logo" />
           <div>
             <h1 className="h1">Sustainability Tools</h1>
             <p className="sub">Resources and calculators to help you live more sustainably.</p>

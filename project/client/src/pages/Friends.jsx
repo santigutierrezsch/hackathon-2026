@@ -121,7 +121,6 @@ export default function Friends() {
     <div className="container">
       <div className="topbar">
         <div className="brand">
-          <div className="logo" />
           <div>
             <h1 className="h1">Friends</h1>
             <p className="sub">Connect with others and compare your eco impact.</p>

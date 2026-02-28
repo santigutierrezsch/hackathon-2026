@@ -217,7 +217,6 @@ export default function Dashboard() {
       {/* Header */}
       <div className="topbar">
         <div className="brand">
-          <div className="logo" />
           <div>
             <h1 className="h1">Dashboard</h1>
             <p className="sub">Log your eco-friendly activities and earn XP.</p>

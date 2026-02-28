@@ -117,7 +117,6 @@ export default function Leaderboard() {
     <div className="container">
       <div className="topbar">
         <div className="brand">
-          <div className="logo" />
           <div>
             <h1 className="h1">Leaderboard</h1>
             <p className="sub">See who's making the biggest eco impact.</p>

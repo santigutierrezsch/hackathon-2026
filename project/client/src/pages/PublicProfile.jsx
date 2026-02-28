@@ -54,7 +54,6 @@ export default function PublicProfile() {
     <div className="container" style={{ maxWidth: 640 }}>
       <div className="topbar">
         <div className="brand">
-          <div className="logo" />
           <div>
             <h1 className="h1">Profile</h1>
             <p className="sub">@{user.username}'s public profile</p>
