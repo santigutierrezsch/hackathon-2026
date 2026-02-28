@@ -1,0 +1,83 @@
+{
+  "users": [
+    {
+      "id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
+      "username": "santigutierrezsch",
+      "email": "sagutierrez@stu.naperville203.org",
+      "display_name": "Santiago Gutierrez-Schoenmakers",
+      "photo_url": "https://lh3.googleusercontent.com/a-/ALV-UjW43v8_WzhAJQ5hh54l1kSKPjln6n2pwpwQWMTkDhJz_JLePjEpgRjquOwleGZ94xhD9FjamqdGtUruEqSrSLQ6PhFwbh3s4MwSVzEKSrNV0AhY6A7mypTFGIZD5I3Lv4e3idIPV0t_tZjG7rFGubg9LBeOr-oySEzKPqkuzRjUpAG0QqRAhJtbDYOOAzcNun2_4miNZWEzvK2MRlV0h5aCHE0R3FjC53Q2C4MBRZZtsDCzijr4hqSau-kKfgs3SK33OLnvMoem5OiOqUM2y-E9Rn0gNRzJZw9Sr5VF7ZYca0fe9UY8EWBCXq2OCwEUTTBKiO-HGxNTeZcbMncUzEuAtIOWRTpZyea1plnZYi6IjEMUzgYStkMP8sV0Ez7wqBRw3OPpj4Hi0SYrmv02uSvR6qvH1zzY4si-dDoqPXLyWi2jFUbKRmSJeutNwDzWBl65ADh0JlWx64FM4w4nToqbQXGMiOePZMur8CBp-AZ8DZxTlnCdtpYn7pRNR_2MGe1_7B3vJxcnaMKmZ8wIoOHEbsbkJELX-DxpZr3UqOPyZ-B8LshXSNHxMOt7tlTQJooXUDtM8r8gatwPBQJ0mCnKXe6NNTQ1ZNGbqxb9ANUkpWx9sFLu16gBOmOdNk3421Z15_4eLiQ-6nY2zvKy9_SFD6H1Du6vPFttRGJEkpGELq2cwOSJhk8LsS39GL0Ovs4nfUOUo638Aeit9Um1nqPAfmoqEYOErcuLTeZFB46U21PMyKSLaJoiTOnYLQRiri628Ui3ME_ndPOzCKqMWe0SCf5fsYbit71NDAFU_PVTbWKoGf20M8vkrPWZzFvroZwJqbvO7w1paO3ly59Dukh0J7g9F2qXOOM_ovqbmn0rslLX8e6yCfvwN3cCdCGls-7b54NkBgxeLmp-VhN-fOyXVb0i6He2ThvKkbS32afhqj6MNzmsQ5jyGzd32m3Jgv90RZlz1koPFKIgOj4AoEbhd6M9uTlVpnPSLI24qWQM1d4Qe7YZsFhVOCCNjM6KFPlVf1bKNT8c01jsAx_95NuLJM50FuVdgLHmMMzUsiZdxbJ30i2c7RgO=s96-c",
+      "xp": 8002056,
+      "webhook_url": null,
+      "created_at": 1772301788
+    },
+    {
+      "id": "czuabqsJ4fehJ00EpZsrRKhkyg43",
+      "username": "santi",
+      "email": "santigutierrezsch@gmail.com",
+      "display_name": "Santiago Gutierrez",
+      "photo_url": "https://lh3.googleusercontent.com/a/ACg8ocIeiCrHKE2Y4dcu7Lye3hGEaMEE163ETfcvpbhovutFJDcU-w=s96-c",
+      "xp": 0,
+      "webhook_url": null,
+      "created_at": 1772301941
+    }
+  ],
+  "friend_requests": [],
+  "friends": [],
+  "activities": [
+    {
+      "id": 1,
+      "user_id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
+      "type": "farmers_market",
+      "xp_earned": 50,
+      "details": {},
+      "created_at": 1772301828
+    },
+    {
+      "id": 2,
+      "user_id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
+      "type": "carpool",
+      "xp_earned": 5,
+      "details": {
+        "distance": "",
+        "people": "2"
+      },
+      "created_at": 1772301830
+    },
+    {
+      "id": 3,
+      "user_id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
+      "type": "recycling",
+      "xp_earned": 2000,
+      "details": {
+        "plastic_lbs": "100",
+        "paper_lbs": "",
+        "metal_lbs": ""
+      },
+      "created_at": 1772301834
+    },
+    {
+      "id": 4,
+      "user_id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
+      "type": "uber_ev",
+      "xp_earned": 1,
+      "details": {
+        "distance": ""
+      },
+      "created_at": 1772301839
+    },
+    {
+      "id": 5,
+      "user_id": "aGxp66tAn3Our56w6Al3vvFjlfr2",
+      "type": "uber_ev",
+      "xp_earned": 8000000,
+      "details": {
+        "distance": "1000000"
+      },
+      "created_at": 1772301843
+    }
+  ],
+  "_seq": {
+    "friend_requests": 0,
+    "activities": 5
+  }
+}

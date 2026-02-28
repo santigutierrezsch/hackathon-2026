@@ -11,7 +11,12 @@ async function apiFetch(path, options = {}, getToken = null) {
   const res = await fetch(path, { ...options, headers });
   const data = await res.json().catch(() => ({}));
 
-  if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
+  if (!res.ok) {
+    const msg = data?.hint
+      ? `${data.error || "Request failed"}: ${data.hint}`
+      : (data?.error || `Request failed (${res.status})`);
+    throw new Error(msg);
+  }
   return data;
 }
 

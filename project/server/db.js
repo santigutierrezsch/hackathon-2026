@@ -13,6 +13,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 const DB_FILE    = path.join(__dirname, "data", "db.json");
 
+function normalizeUsername(value) {
+  return String(value || "").trim().replace(/^@+/, "");
+}
+
 // ── Default shape ─────────────────────────────────────────────────────────────
 const DEFAULT = {
   users:           [],   // { id, username, email, display_name, photo_url, xp, webhook_url, created_at }
@@ -58,7 +62,9 @@ const users = {
     return _store.users.find(u => u.id === id) || null;
   },
   findByUsername(username) {
-    return _store.users.find(u => u.username === username) || null;
+    const normalized = normalizeUsername(username).toLowerCase();
+    if (!normalized) return null;
+    return _store.users.find(u => (u.username || "").toLowerCase() === normalized) || null;
   },
   create({ id, email, display_name, photo_url }) {
     const user = { id, username: null, email: email || null, display_name: display_name || null,
@@ -91,7 +97,11 @@ const users = {
     return u;
   },
   isUsernameTaken(username, excludeId = null) {
-    return _store.users.some(u => u.username === username && u.id !== excludeId);
+    const normalized = normalizeUsername(username).toLowerCase();
+    if (!normalized) return false;
+    return _store.users.some(
+      u => (u.username || "").toLowerCase() === normalized && u.id !== excludeId
+    );
   },
   allWithUsername() {
     return _store.users.filter(u => u.username).sort((a, b) => b.xp - a.xp);

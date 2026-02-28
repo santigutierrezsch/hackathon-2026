@@ -56,13 +56,17 @@ router.post("/request", requireAuth, (req, res) => {
   const me = getUsername(req.user.uid);
   if (!me) return res.status(400).json({ error: "Set a username first" });
 
-  const { username: target } = req.body;
-  if (!target) return res.status(400).json({ error: "username is required" });
-  if (target === me) return res.status(400).json({ error: "Cannot add yourself" });
+  const targetInput = String(req.body?.username || "").trim().replace(/^@+/, "");
+  if (!targetInput) return res.status(400).json({ error: "username is required" });
+  if (targetInput.toLowerCase() === me.toLowerCase()) {
+    return res.status(400).json({ error: "Cannot add yourself" });
+  }
 
-  if (!db.users.findByUsername(target)) {
+  const targetUser = db.users.findByUsername(targetInput);
+  if (!targetUser) {
     return res.status(404).json({ error: "User not found" });
   }
+  const target = targetUser.username;
 
   if (db.friends.areFriends(me, target)) {
     return res.status(409).json({ error: "Already friends" });
@@ -141,8 +145,11 @@ router.delete("/cancel/:id", requireAuth, (req, res) => {
  */
 router.delete("/:username", requireAuth, (req, res) => {
   const me     = getUsername(req.user.uid);
-  const target = req.params.username;
+  const targetInput = String(req.params.username || "").trim().replace(/^@+/, "");
   if (!me) return res.status(400).json({ error: "Set a username first" });
+  const targetUser = db.users.findByUsername(targetInput);
+  if (!targetUser) return res.status(404).json({ error: "User not found" });
+  const target = targetUser.username;
 
   if (!db.friends.areFriends(me, target)) {
     return res.status(404).json({ error: "Not friends" });
