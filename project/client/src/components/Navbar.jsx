@@ -3,11 +3,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const NAV_LINKS = [
-  { to: "/dashboard",   label: "⚡ Dashboard"   },
-  { to: "/leaderboard", label: "🏆 Leaderboard" },
-  { to: "/social",      label: "👥 Social"      },
-  { to: "/resources",   label: "🌿 Resources"   },
-  { to: "/tools",       label: "🛠️ Tools"       },
+  { to: "/dashboard",   label: "Dashboard"   },
+  { to: "/leaderboard", label: "Leaderboard" },
+  { to: "/social",      label: "Social"      },
+  { to: "/tools",       label: "Tools"       },
 ];
 
 export default function Navbar() {
@@ -47,12 +46,13 @@ export default function Navbar() {
       <div style={{
         maxWidth: 1060,
         margin: "0 auto",
-        padding: "0 18px",
+        padding: "8px 14px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        height: 56,
+        minHeight: 56,
         gap: 8,
+        flexWrap: "wrap",
       }}>
 
         {/* Brand */}
@@ -64,7 +64,15 @@ export default function Navbar() {
         </Link>
 
         {/* Nav links */}
-        <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{
+          display: "flex",
+          gap: 4,
+          alignItems: "center",
+          flexWrap: "nowrap",
+          overflowX: "auto",
+          maxWidth: "100%",
+          paddingBottom: 2,
+        }}>
           {NAV_LINKS.map(({ to, label }) => {
             const active = location.pathname === to ||
               (to !== "/" && location.pathname.startsWith(to));
@@ -77,6 +85,7 @@ export default function Navbar() {
                   borderRadius: 14,
                   fontSize: 13,
                   fontWeight: 800,
+                  whiteSpace: "nowrap",
                   textDecoration: "none",
                   color: "var(--brown)",
                   background: active ? "var(--mint)" : "transparent",
@@ -167,7 +176,7 @@ export default function Navbar() {
                       borderBottom: "1px solid var(--border)",
                     }}
                   >
-                    👤 Profile
+                    Profile
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -184,7 +193,7 @@ export default function Navbar() {
                       color: "var(--brown)",
                     }}
                   >
-                    🚪 Log Out
+                    Log Out
                   </button>
                 </div>
               )}
@@ -226,7 +235,7 @@ export default function Navbar() {
                       borderBottom: "1px solid var(--border)",
                     }}
                   >
-                    🔑 Sign In
+                    Sign In
                   </Link>
                   <Link
                     to="/login"
@@ -240,7 +249,7 @@ export default function Navbar() {
                       color: "var(--brown)",
                     }}
                   >
-                    ✨ Sign Up
+                    Sign Up
                   </Link>
                 </div>
               )}

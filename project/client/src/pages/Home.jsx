@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const FEATURES = [
   {
@@ -46,6 +47,12 @@ const STEPS = [
 ];
 
 export default function Home() {
+  const { isLoggedIn, loading } = useAuth();
+
+  if (!loading && isLoggedIn) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div style={{ minHeight: "100vh" }}>
 
@@ -265,7 +272,7 @@ export default function Home() {
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
             {[
               { to: "/leaderboard", label: "Leaderboard" },
-              { to: "/resources",   label: "Resources"   },
+              { to: "/markets",     label: "Markets"     },
               { to: "/tools",       label: "Tools"       },
               { to: "/login",       label: "Sign In"     },
             ].map(({ to, label }) => (

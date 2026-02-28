@@ -3,10 +3,22 @@ import { Link } from "react-router-dom";
 import { fetchMarkets } from "../utils/api.js";
 import { isOpenNow } from "../utils/isOpenNow.js";
 
+function formatTime12(value) {
+  if (!value || typeof value !== "string" || !value.includes(":")) return value || "-";
+  const [hRaw, mRaw] = value.split(":");
+  const h = Number(hRaw);
+  const m = Number(mRaw);
+  if (Number.isNaN(h) || Number.isNaN(m)) return value;
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour12 = (h % 12) || 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${suffix}`;
+}
+
 export default function Resources() {
   const [markets, setMarkets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [err,     setErr]     = useState("");
+  const [err, setErr] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -36,74 +48,27 @@ export default function Resources() {
       <div className="topbar">
         <div className="brand">
           <div>
-            <h1 className="h1">Resources</h1>
-            <p className="sub">Local markets, eco tools, and sustainability resources.</p>
+            <h1 className="h1">Markets</h1>
+            <p className="sub">Browse local farmers markets and launch EcoRoute instantly.</p>
           </div>
         </div>
       </div>
 
-      {/* ── Tools Cards ──────────────────────────────────────────────────── */}
-      <div className="sectionTitle">Sustainability Tools</div>
-      <div className="grid" style={{ marginBottom: 24 }}>
-        <div className="card r1">
-          <div className="tape tl" />
-          <div style={{ fontSize: 28, marginBottom: 8 }}>🗺️</div>
-          <h2 className="title">EcoRoute Calculator</h2>
-          <p className="meta">
-            Calculate the CO₂ impact of your journey and compare car, bike, bus, and walking emissions.
-          </p>
-          <div className="divider" />
-          <Link to="/ecoroute" className="btn primary">Open EcoRoute →</Link>
-        </div>
-
-        <div className="card r2">
-          <div className="tape tr" />
-          <div style={{ fontSize: 28, marginBottom: 8 }}>🛠️</div>
-          <h2 className="title">Sustainability Tools</h2>
-          <p className="meta">
-            Carbon footprint calculator, water usage estimator, home energy audit, and recycling guide.
-          </p>
-          <div className="divider" />
-          <Link to="/tools" className="btn primary">Open Tools →</Link>
-        </div>
-
-        <div className="card r3">
-          <div className="tape tl" />
-          <div style={{ fontSize: 28, marginBottom: 8 }}>⚡</div>
-          <h2 className="title">Dashboard & XP</h2>
-          <p className="meta">
-            Log eco-friendly activities to earn XP and coins. Track your progress and grow your garden.
-          </p>
-          <div className="divider" />
-          <Link to="/dashboard" className="btn primary">Go to Dashboard →</Link>
-        </div>
-      </div>
-
-      {/* ── Markets Section ───────────────────────────────────────────────── */}
-      <div className="sectionTitle">Local Farmers Markets</div>
-
-      {loading && <div className="card">Loading markets…</div>}
-      {err     && <div className="card" style={{ color: "#c0392b" }}>{err}</div>}
+      {loading && <div className="card">Loading markets...</div>}
+      {err && <div className="card" style={{ color: "#c0392b" }}>{err}</div>}
 
       {!loading && !err && (
         <div className="grid">
           {sorted.map((m, idx) => {
             const open = isOpenNow(m);
-            const rot  = ["r1","r2","r3","r4"][idx % 4];
+            const rot = ["r1", "r2", "r3", "r4"][idx % 4];
+            const expanded = expandedId === m.id;
 
             return (
               <div key={m.id} className={`card ${rot}`}>
-                <div className="tape tl" />
-                <div className="tape tr" />
-
                 <div className="space">
                   <div>
                     <h2 className="title">{m.name}</h2>
-                    <div className="meta">
-                      <div><b>Address:</b> {m.address}</div>
-                      <div><b>Days:</b> {(m.daysOpen || []).join(", ")}</div>
-                      <div><b>Hours:</b> {m.hours?.open} – {m.hours?.close}</div>
-                    </div>
                   </div>
                   <span className={`badge ${open ? "ok" : "bad"}`}>
                     {open ? "OPEN NOW" : "CLOSED"}
@@ -113,13 +78,24 @@ export default function Resources() {
                 <div className="divider" />
 
                 <div className="row">
-                  <Link className="btn" to={`/market/${m.id}`}>
-                    Details →
-                  </Link>
-                  <Link className="btn primary" to={`/ecoroute/${m.id}`}>
-                    🗺️ EcoRoute
+                  <button
+                    className={`btn ${expanded ? "" : "primary"}`}
+                    onClick={() => setExpandedId(expanded ? null : m.id)}
+                  >
+                    {expanded ? "Hide Details" : "Details"}
+                  </button>
+                  <Link className="btn" to={`/ecoroute/${m.id}`}>
+                    EcoRoute
                   </Link>
                 </div>
+
+                {expanded && (
+                  <div className="bigStat" style={{ marginTop: 12 }}>
+                    <div className="kv"><span className="k">Address</span><span className="v">{m.address}</span></div>
+                    <div className="kv"><span className="k">Days</span><span className="v">{(m.daysOpen || []).join(", ")}</span></div>
+                    <div className="kv"><span className="k">Hours</span><span className="v">{formatTime12(m.hours?.open)} - {formatTime12(m.hours?.close)}</span></div>
+                  </div>
+                )}
               </div>
             );
           })}

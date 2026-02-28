@@ -1,61 +1,65 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { fetchMarkets } from "../utils/api.js";
-import { computeEmissions } from "../utils/emissions.js";
 
-const MODES = [
-  { key: "car",  label: "🚗 Car",  color: "#e74c3c" },
-  { key: "bus",  label: "🚌 Bus",  color: "#e67e22" },
-  { key: "bike", label: "🚲 Bike", color: "#27ae60" },
-  { key: "walk", label: "🚶 Walk", color: "#2980b9" },
-];
+const FACTORS = {
+  car: 0.404,
+  bus: 0.15,
+  bike_walk: 0,
+};
 
 export default function EcoRoute() {
-  const { id } = useParams();  // may be undefined on /ecoroute
+  const { id } = useParams();
 
-  const [markets,   setMarkets]   = useState([]);
-  const [market,    setMarket]    = useState(null);
-  const [mode,      setMode]      = useState("car");
-  const [distance,  setDistance]  = useState("0");
+  const [markets, setMarkets] = useState([]);
+  const [selectedMarketId, setSelectedMarketId] = useState(id || "");
+  const [calcMode, setCalcMode] = useState(id ? "markets" : "custom");
+  const [transport, setTransport] = useState("car");
+
+  const [distance, setDistance] = useState("0");
   const [routeInfo, setRouteInfo] = useState(null);
-  const [locStatus, setLocStatus] = useState("idle");
-  const [userPos,   setUserPos]   = useState(null);
-  const [showCalc,  setShowCalc]  = useState(false);
-  const [loading,   setLoading]   = useState(!!id);
-  const [err,       setErr]       = useState("");
 
-  // Load markets
+  const [locStatus, setLocStatus] = useState("idle");
+  const [userPos, setUserPos] = useState(null);
+
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
   useEffect(() => {
-    fetchMarkets()
-      .then(data => {
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await fetchMarkets();
         setMarkets(data);
-        if (id) {
-          const found = data.find(m => m.id === id);
-          if (!found) setErr("Market not found");
-          else setMarket(found);
-          setLoading(false);
-        }
-      })
-      .catch(e => {
+      } catch (e) {
         setErr(e?.message || "Failed to load markets");
+      } finally {
         setLoading(false);
-      });
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (id) {
+      setSelectedMarketId(id);
+      setCalcMode("markets");
+    }
   }, [id]);
 
-  const calc = useMemo(() => computeEmissions(distance, mode), [distance, mode]);
+  useEffect(() => {
+    if (calcMode !== "markets" || selectedMarketId || markets.length === 0) return;
+    setSelectedMarketId(markets[0].id);
+  }, [calcMode, selectedMarketId, markets]);
 
-  // All-modes comparison
-  const allModes = useMemo(() => {
-    return MODES.map(m => {
-      const c = computeEmissions(distance, m.key);
-      return { ...m, kg: c.chosenKg, savedVsCar: c.savedKg };
-    });
-  }, [distance]);
+  const selectedMarket = useMemo(
+    () => markets.find((m) => m.id === selectedMarketId) || null,
+    [markets, selectedMarketId]
+  );
 
   function getUserLocation() {
     setLocStatus("getting");
     navigator.geolocation.getCurrentPosition(
-      pos => {
+      (pos) => {
         setUserPos({ lat: pos.coords.latitude, lon: pos.coords.longitude });
         setLocStatus("ready");
       },
@@ -64,243 +68,157 @@ export default function EcoRoute() {
     );
   }
 
-  async function getRouteDistance(profile = "driving") {
-    if (!userPos) return;
-    const dest = market?.coordinates;
-    if (!dest) return;
-
-    const [endLat, endLon] = dest; // markets.json stores [lat, lon]
-    const url = `/api/route?startLat=${userPos.lat}&startLon=${userPos.lon}&endLat=${endLat}&endLon=${endLon}&profile=${profile}`;
+  async function setDistanceFromMarketRoute() {
+    if (!userPos || !selectedMarket?.coordinates) return;
+    const [endLat, endLon] = selectedMarket.coordinates;
+    let data;
 
     try {
-      const res  = await fetch(url);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Route failed");
-      setRouteInfo(data);
-      const miles = data.distanceMeters / 1609.34;
-      setDistance(miles.toFixed(2));
-    } catch (e) {
-      alert(e.message);
+      const url = `/api/route?startLat=${userPos.lat}&startLon=${userPos.lon}&endLat=${endLat}&endLon=${endLon}&profile=driving`;
+      const res = await fetch(url);
+      data = await res.json();
+      console.log("[EcoRoute] /api/route response:", data);
+      if (!res.ok) {
+        throw new Error(data?.error || "Route request failed");
+      }
+    } catch {
+      const directUrl = `https://router.project-osrm.org/route/v1/driving/${userPos.lon},${userPos.lat};${endLon},${endLat}?overview=false&steps=true`;
+      const directRes = await fetch(directUrl);
+      const directData = await directRes.json();
+      console.log("[EcoRoute] direct OSRM response:", directData);
+      const route = directData?.routes?.[0];
+      if (!directRes.ok || !route) {
+        throw new Error("Route request failed");
+      }
+      data = { distanceMeters: route.distance, durationSeconds: route.duration };
     }
+
+    setRouteInfo(data);
+    const miles = Number(data.distanceMeters || 0) / 1609.34;
+    setDistance(miles.toFixed(2));
   }
 
-  if (loading) return <div className="container"><div className="card">Loading…</div></div>;
-  if (err && id) return <div className="container"><div className="card" style={{ color: "#c0392b" }}>{err}</div></div>;
+  useEffect(() => {
+    if (calcMode !== "markets" || !selectedMarket || !userPos) return;
+    (async () => {
+      try {
+        setErr("");
+        await setDistanceFromMarketRoute();
+      } catch (e) {
+        setErr(e.message);
+      }
+    })();
+  }, [calcMode, selectedMarketId, userPos]);
 
-  const maxKg = Math.max(...allModes.map(m => m.kg), 0.01);
+  const d = Math.max(0, Number(distance) || 0);
+  const carKg = d * FACTORS.car;
+  const busKg = d * FACTORS.bus;
+  const bikeWalkKg = d * FACTORS.bike_walk;
+
+  const selectedKg =
+    transport === "car" ? carKg : transport === "bus" ? busKg : bikeWalkKg;
+  const savedVsCar = carKg - selectedKg;
+
+  if (loading) return <div className="container"><div className="card">Loading...</div></div>;
 
   return (
     <div className="container">
-      {market && (
-        <Link to={`/market/${market.id}`} className="btn ghost">← Back to {market.name}</Link>
-      )}
-      {!market && (
-        <Link to="/resources" className="btn ghost">← Resources</Link>
-      )}
+      <Link to="/markets" className="btn ghost">Back to Markets</Link>
 
       <div style={{ height: 12 }} />
 
       <div className="card r1">
-        <div className="tape tl" />
-        <div className="tape tr" />
-
         <div className="space">
           <div>
-            <h2 className="h1" style={{ fontSize: 28, margin: 0 }}>🗺️ EcoRoute</h2>
+            <h2 className="h1" style={{ fontSize: 28, margin: 0 }}>EcoRoute</h2>
             <p className="sub" style={{ marginTop: 8 }}>
-              {market
-                ? <>Destination: <b>{market.name}</b></>
-                : "Calculate CO₂ for any journey"}
+              Baseline is always car, so savings are highlighted against driving.
             </p>
           </div>
-          <span className="badge">CO₂ Calculator</span>
+          <span className="badge">Route + CO2</span>
         </div>
 
-        {/* Market selector (standalone mode) */}
-        {!market && markets.length > 0 && (
+        <div className="sectionTitle">Start point</div>
+        <div className="row">
+          <button className="btn primary" onClick={getUserLocation}>Use Current Location</button>
+          {userPos && (
+            <span className="smallNote" style={{ margin: 0 }}>
+              {userPos.lat.toFixed(5)}, {userPos.lon.toFixed(5)}
+            </span>
+          )}
+        </div>
+
+        {locStatus === "getting" && <div className="smallNote">Getting location...</div>}
+        {locStatus === "error" && <div className="smallNote" style={{ color: "#c0392b" }}>Location permission failed.</div>}
+
+        <div className="sectionTitle">Distance Source</div>
+        <div className="row">
+          <button className={`btn ${calcMode === "markets" ? "primary" : ""}`} onClick={() => setCalcMode("markets")}>Farmers Markets</button>
+          <button className={`btn ${calcMode === "custom" ? "primary" : ""}`} onClick={() => { setCalcMode("custom"); setRouteInfo(null); }}>Custom Miles</button>
+        </div>
+
+        {calcMode === "markets" && (
           <>
-            <div className="sectionTitle">Select destination market</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {markets.map(m => (
+            <div className="sectionTitle">Farmers Markets</div>
+            <div className="row">
+              {markets.map((m) => (
                 <button
                   key={m.id}
-                  className={`btn ${market?.id === m.id ? "primary" : ""}`}
+                  className={`btn ${selectedMarketId === m.id ? "primary" : ""}`}
+                  onClick={() => setSelectedMarketId(m.id)}
                   style={{ fontSize: 12 }}
-                  onClick={() => setMarket(m)}
                 >
                   {m.name}
                 </button>
               ))}
             </div>
+
+            {routeInfo && (
+              <div className="smallNote">
+                Driving route: {(routeInfo.distanceMeters / 1000).toFixed(2)} km, {(routeInfo.durationSeconds / 60).toFixed(0)} min
+              </div>
+            )}
           </>
         )}
 
-        {/* Location */}
-        <div className="sectionTitle">Your location</div>
-        <div className="row">
-          <button className="btn primary" onClick={getUserLocation}>
-            📍 Use my location
-          </button>
-
-          {userPos && market && (
-            <>
-              <button className="btn" onClick={() => getRouteDistance("driving")}>
-                🧭 Drive route
-              </button>
-              <button className="btn" onClick={() => getRouteDistance("cycling")}>
-                🚲 Bike route
-              </button>
-              <button className="btn" onClick={() => getRouteDistance("walking")}>
-                🚶 Walk route
-              </button>
-            </>
-          )}
-        </div>
-
-        {locStatus === "getting" && <div className="smallNote">Requesting location…</div>}
-        {locStatus === "error"   && <div className="smallNote" style={{ color: "#c0392b" }}>Location failed. Allow permission and try again.</div>}
-        {userPos && (
-          <div className="smallNote">
-            📍 {userPos.lat.toFixed(5)}, {userPos.lon.toFixed(5)}
-          </div>
-        )}
-        {routeInfo && (
-          <div className="smallNote">
-            Route: <b>{(routeInfo.distanceMeters / 1000).toFixed(2)} km</b> •{" "}
-            <b>{(routeInfo.durationSeconds / 60).toFixed(0)} min</b>
-          </div>
+        {calcMode === "custom" && (
+          <>
+            <div className="sectionTitle">Custom miles</div>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              step="0.1"
+              value={distance}
+              onChange={(e) => setDistance(e.target.value)}
+              placeholder="Enter miles"
+              style={{ maxWidth: 260 }}
+            />
+          </>
         )}
 
-        {/* Manual distance */}
-        <div className="sectionTitle">Distance (miles)</div>
-        <input
-          className="input"
-          type="number"
-          min="0"
-          step="0.1"
-          value={distance}
-          onChange={e => setDistance(e.target.value)}
-          placeholder="Enter distance in miles…"
-          style={{ maxWidth: 220 }}
-        />
-
-        {/* Mode selector */}
-        <div className="sectionTitle">Your transport mode</div>
+        <div className="sectionTitle">Transport mode</div>
         <div className="row">
-          {MODES.map(m => (
-            <button
-              key={m.key}
-              className={`btn ${mode === m.key ? "primary" : ""}`}
-              onClick={() => setMode(m.key)}
-            >
-              {m.label}
-            </button>
-          ))}
+          <button className={`btn ${transport === "car" ? "primary" : ""}`} onClick={() => setTransport("car")}>Car</button>
+          <button className={`btn ${transport === "bus" ? "primary" : ""}`} onClick={() => setTransport("bus")}>Bus</button>
+          <button className={`btn ${transport === "bike_walk" ? "primary" : ""}`} onClick={() => setTransport("bike_walk")}>Bike / Walk</button>
         </div>
 
-        {/* Main result */}
-        <div className="bigStat" style={{ marginTop: 16 }}>
+        <div className="bigStat" style={{ marginTop: 14 }}>
           <div className="headline">
-            {calc.savedKg >= 0 ? "You save " : "You add "}
-            <span style={{ fontWeight: 1000, color: calc.savedKg >= 0 ? "#2d6a4f" : "#c0392b" }}>
-              {Math.abs(calc.savedKg).toFixed(2)} kg CO₂
+            {savedVsCar >= 0 ? "Saved vs car: " : "Added vs car: "}
+            <span style={{ color: savedVsCar >= 0 ? "#2d6a4f" : "#c0392b" }}>
+              {Math.abs(savedVsCar).toFixed(2)} kg CO2
             </span>
-            {" "}vs driving
           </div>
-          <div className="hint">
-            Car: <b>{calc.carKg.toFixed(2)} kg</b> · Your mode ({mode}): <b>{calc.chosenKg.toFixed(2)} kg</b>
-          </div>
+          <div className="hint">Distance: {d.toFixed(2)} miles</div>
+          <div className="divider" />
+          <div className="kv"><span className="k">Car</span><span className="v">{carKg.toFixed(2)} kg</span></div>
+          <div className="kv"><span className="k">Bus</span><span className="v">{busKg.toFixed(2)} kg</span></div>
+          <div className="kv"><span className="k">Bike / Walk</span><span className="v">{bikeWalkKg.toFixed(2)} kg</span></div>
         </div>
 
-        {/* All-modes comparison */}
-        <div className="sectionTitle">All transport modes comparison</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {allModes.map(m => {
-            const barPct = maxKg > 0 ? (m.kg / maxKg) * 100 : 0;
-            const isCurrent = m.key === mode;
-            return (
-              <div
-                key={m.key}
-                onClick={() => setMode(m.key)}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: 14,
-                  border: isCurrent ? "2px solid var(--brown)" : "2px solid var(--border)",
-                  background: isCurrent ? "var(--mint)" : "var(--paper2)",
-                  cursor: "pointer",
-                  transition: "background 0.12s",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <span style={{ fontWeight: 900, fontSize: 14 }}>{m.label}</span>
-                  <span style={{ fontWeight: 1000, fontSize: 14, color: m.color }}>
-                    {m.kg.toFixed(2)} kg CO₂
-                  </span>
-                </div>
-                {/* Bar */}
-                <div style={{
-                  height: 8, borderRadius: 999,
-                  background: "rgba(122,90,58,0.10)",
-                  overflow: "hidden",
-                }}>
-                  <div style={{
-                    height: "100%",
-                    width: `${barPct}%`,
-                    background: m.color,
-                    borderRadius: 999,
-                    transition: "width 0.3s ease",
-                  }} />
-                </div>
-                {m.key !== "car" && (
-                  <div style={{ fontSize: 11, color: "rgba(122,90,58,0.6)", marginTop: 4, fontWeight: 800 }}>
-                    {m.savedVsCar >= 0
-                      ? `Saves ${m.savedVsCar.toFixed(2)} kg vs car`
-                      : `+${Math.abs(m.savedVsCar).toFixed(2)} kg vs car`}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Actions */}
-        <div className="row" style={{ marginTop: 16 }}>
-          <button className="btn" onClick={() => setShowCalc(s => !s)}>
-            {showCalc ? "Hide details" : "Show calculation"}
-          </button>
-          {userPos && market && (
-            <a
-              className="btn"
-              target="_blank"
-              rel="noreferrer"
-              href={`https://www.google.com/maps/dir/?api=1&origin=${userPos.lat},${userPos.lon}&destination=${market.coordinates[0]},${market.coordinates[1]}&travelmode=driving`}
-            >
-              🗺️ Google Maps
-            </a>
-          )}
-        </div>
-
-        {showCalc && (
-          <div className="bigStat" style={{ marginTop: 12 }}>
-            <div className="headline" style={{ fontSize: 14 }}>Calculation details</div>
-            <div className="hint">CO₂(mode) = distance_miles × factor_kg_per_mile</div>
-            <div className="divider" />
-            <div className="sectionTitle">Factors (kg / mile)</div>
-            <pre className="code">{JSON.stringify(calc.factors, null, 2)}</pre>
-            <div className="sectionTitle">Values</div>
-            <pre className="code">{JSON.stringify({
-              distanceMiles: calc.distanceMiles,
-              mode: calc.mode,
-              carKg: calc.carKg,
-              chosenKg: calc.chosenKg,
-              savedKg: calc.savedKg,
-            }, null, 2)}</pre>
-          </div>
-        )}
-
-        <div className="smallNote">
-          Methodology: OSRM routing distance × public average emissions factors.
-        </div>
+        {err && <div className="smallNote" style={{ color: "#c0392b" }}>{err}</div>}
       </div>
     </div>
   );

@@ -229,7 +229,7 @@ const TOOLS = [
     desc: "Find nearby farmers markets to buy fresh, local, seasonal food and reduce food-miles.",
     rot: "r1",
     isLink: true,
-    linkTo: "/resources",
+    linkTo: "/markets",
     linkLabel: "Browse Markets →",
   },
   {

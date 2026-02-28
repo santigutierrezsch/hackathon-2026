@@ -229,7 +229,7 @@ export default function Dashboard() {
         <div className="tape tl" />
         <div className="space">
           <div>
-            <div className="sectionTitle">Your XP</div>
+            <div className="sectionTitle" style={{ marginTop: 0 }}>Your XP</div>
             <div style={{ fontSize: 42, fontWeight: 1000, lineHeight: 1 }}>
               {(dbUser?.xp || 0).toLocaleString()}
             </div>
@@ -237,13 +237,9 @@ export default function Dashboard() {
               {tier.label}
             </div>
           </div>
-        <div style={{ textAlign: "right" }}>
-            <div className="sectionTitle">Welcome back</div>
+          <div style={{ textAlign: "right" }}>
+            <div className="sectionTitle" style={{ marginTop: 0 }}>Welcome back</div>
             <div style={{ fontSize: 18, fontWeight: 900 }}>{dbUser?.username}</div>
-            {dbUser?.photo_url && (
-              <img src={dbUser.photo_url} alt="avatar"
-                style={{ width: 48, height: 48, borderRadius: "50%", marginTop: 8, border: "2px solid var(--border)" }} />
-            )}
             <div style={{
               marginTop: 8,
               background: "#FFD700", color: "#7a5a00",
@@ -265,7 +261,7 @@ export default function Dashboard() {
 
       {/* Activity selector */}
       <div className="sectionTitle">Log an activity</div>
-      <div className="grid" style={{ marginBottom: 16 }}>
+      <div className="grid" style={{ marginBottom: 16, alignItems: "start" }}>
         {Object.entries(ACTIVITY_LABELS).map(([type, label]) => (
           <div
             key={type}

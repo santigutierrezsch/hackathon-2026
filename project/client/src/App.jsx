@@ -40,7 +40,8 @@ export default function App() {
           <Route path="/"             element={<Home />} />
           <Route path="/login"        element={<Login />} />
           <Route path="/leaderboard"  element={<Leaderboard />} />
-          <Route path="/resources"    element={<Resources />} />
+          <Route path="/markets"      element={<Resources />} />
+          <Route path="/resources"    element={<Navigate to="/markets" replace />} />
           <Route path="/tools"        element={<Tools />} />
           <Route path="/market/:id"   element={<Market />} />
           <Route path="/nerd"         element={<NerdStats />} />

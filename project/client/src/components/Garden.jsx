@@ -32,8 +32,8 @@ function normalizePlant(key) {
 }
 
 // ── Isometric tile dimensions ─────────────────────────────────────────────────
-const TILE_W     = 80;   // full width of the diamond
-const TILE_H     = 40;   // height of the diamond (top vertex to bottom vertex)
+const TILE_W     = 82;   // full width of the diamond
+const TILE_H     = 42;   // height of the diamond (top vertex to bottom vertex)
 const TILE_DEPTH = 22;   // height of the side faces (gives the 3D depth)
 
 /*
@@ -106,10 +106,10 @@ function IsometricBoard({ rows, cols, garden, selectedPlant, selectedTile, onTil
 
           // Colour scheme
           const topColor   = isSelected
-            ? "linear-gradient(135deg, #b8e8a4 0%, #6ec95e 100%)"
-            : "linear-gradient(135deg, #a07848 0%, #7a5230 60%, #6b4423 100%)";
-          const leftColor  = isSelected ? "#4a9e44" : "#4a2e10";
-          const rightColor = isSelected ? "#357a30" : "#2e1a06";
+            ? "linear-gradient(135deg, #c6edbb 0%, #8fd98c 100%)"
+            : "linear-gradient(135deg, #b98e63 0%, #a67a54 55%, #916544 100%)";
+          const leftColor  = isSelected ? "#79bf74" : "#8a6040";
+          const rightColor = isSelected ? "#65aa62" : "#775238";
 
           return (
             <div
@@ -134,15 +134,16 @@ function IsometricBoard({ rows, cols, garden, selectedPlant, selectedTile, onTil
                 height: TILE_H,
                 background: topColor,
                 clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
+                filter: "drop-shadow(0 1px 0 rgba(255,255,255,0.15))",
                 transition: "background 0.15s",
               }} />
 
               {/* ── Left face ── */}
               <div style={{
                 position: "absolute",
-                top: TILE_H / 2,
+                top: TILE_H / 2 - 1,
                 left: 0,
-                width: TILE_W / 2,
+                width: TILE_W / 2 + 1,
                 height: TILE_H / 2 + TILE_DEPTH,
                 background: leftColor,
                 clipPath: "polygon(0% 0%, 100% 50%, 100% 100%, 0% 50%)",
@@ -152,9 +153,9 @@ function IsometricBoard({ rows, cols, garden, selectedPlant, selectedTile, onTil
               {/* ── Right face ── */}
               <div style={{
                 position: "absolute",
-                top: TILE_H / 2,
-                left: TILE_W / 2,
-                width: TILE_W / 2,
+                top: TILE_H / 2 - 1,
+                left: TILE_W / 2 - 1,
+                width: TILE_W / 2 + 1,
                 height: TILE_H / 2 + TILE_DEPTH,
                 background: rightColor,
                 clipPath: "polygon(0% 50%, 100% 0%, 100% 50%, 0% 100%)",
@@ -165,13 +166,18 @@ function IsometricBoard({ rows, cols, garden, selectedPlant, selectedTile, onTil
               {plantKey && PLANT_ART[plantKey] && (
                 <div style={{
                   position: "absolute",
-                  // Centre horizontally; sit on top of the tile surface
+                  // Anchor plant base exactly to tile center.
                   left: "50%",
-                  top: -52,
-                  transform: "translateX(-50%)",
+                  top: TILE_H / 2 + 1,
+                  width: 60,
+                  height: 60,
+                  transform: "translate(-50%, -100%)",
+                  display: "flex",
+                  alignItems: "flex-end",
+                  justifyContent: "center",
                   pointerEvents: "none",
                   zIndex: 20,
-                  filter: "drop-shadow(0 6px 8px rgba(0,0,0,0.32))",
+                  filter: "drop-shadow(0 5px 7px rgba(0,0,0,0.24))",
                 }}>
                   {PLANT_ART[plantKey]}
                 </div>
@@ -359,8 +365,7 @@ export default function Garden() {
   // ── Not logged in ───────────────────────────────────────────────────────────
   if (!isLoggedIn) {
     return (
-      <div className="card r2" style={{ textAlign: "center", padding: "24px" }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>🪴</div>
+      <div className="card r2" style={{ textAlign: "center", padding: "24px", background: "#fbfdf8" }}>
         <div className="sectionTitle">Your Iso-Garden</div>
         <p className="meta" style={{ textAlign: "center" }}>
           Sign in to grow your isometric garden!
@@ -371,7 +376,7 @@ export default function Garden() {
 
   if (loading) {
     return (
-      <div className="card r2" style={{ textAlign: "center", padding: "24px" }}>
+      <div className="card r2" style={{ textAlign: "center", padding: "24px", background: "#fbfdf8" }}>
         <div className="meta">Loading garden…</div>
       </div>
     );
@@ -381,9 +386,7 @@ export default function Garden() {
     garden.some(t => t.row === selectedTile.row && t.col === selectedTile.col);
 
   return (
-    <div className="card r2" style={{ position: "relative" }}>
-      <div className="tape tl" />
-      <div className="tape tr" />
+    <div className="card r2" style={{ position: "relative", background: "linear-gradient(180deg, #f8fff4 0%, #f4f8ef 100%)" }}>
 
       {/* Toast */}
       {toast && (
@@ -418,7 +421,7 @@ export default function Garden() {
       </div>
 
       {/* Instruction */}
-      <div style={{ fontSize: 12, color: "rgba(122,90,58,0.65)", marginTop: 6, textAlign: "center" }}>
+      <div style={{ fontSize: 12, color: "rgba(122,90,58,0.65)", marginTop: 8, textAlign: "center" }}>
         {selectedPlant
           ? `🌱 Click a tile to plant ${selectedPlant} — click again to deselect`
           : selectedTile
@@ -427,14 +430,21 @@ export default function Garden() {
       </div>
 
       {/* 3D Isometric Board */}
-      <IsometricBoard
-        rows={rows}
-        cols={cols}
-        garden={garden}
-        selectedPlant={selectedPlant}
-        selectedTile={selectedTile}
-        onTileClick={handleTileClick}
-      />
+      <div style={{
+        marginTop: 10,
+        border: "1px solid rgba(122,90,58,0.15)",
+        borderRadius: 16,
+        background: "linear-gradient(180deg, #d6f0cf 0%, #e8f4df 45%, #f4f8ef 100%)",
+      }}>
+        <IsometricBoard
+          rows={rows}
+          cols={cols}
+          garden={garden}
+          selectedPlant={selectedPlant}
+          selectedTile={selectedTile}
+          onTileClick={handleTileClick}
+        />
+      </div>
 
       {/* Delete plant button */}
       {selectedTileHasPlant && (
@@ -455,7 +465,7 @@ export default function Garden() {
       )}
 
       {/* Inventory */}
-      <div className="sectionTitle" style={{ marginTop: 12 }}>🎒 Inventory</div>
+      <div className="sectionTitle" style={{ marginTop: 14 }}>Inventory</div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
         {inventory.map((plant) => {
           const key = normalizePlant(plant);
@@ -494,7 +504,7 @@ export default function Garden() {
       </div>
 
       {/* Shop */}
-      <div className="sectionTitle">🛒 Eco Shop</div>
+      <div className="sectionTitle">Garden Shop</div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
 
         {/* Expand row */}
@@ -563,8 +573,8 @@ export default function Garden() {
 }
 
 const shopCardStyle = {
-  background: "var(--paper2)",
-  border: "2px solid var(--border)",
+  background: "#ffffff",
+  border: "1px solid rgba(122,90,58,0.18)",
   borderRadius: 14,
   padding: "10px 12px",
   display: "flex",
@@ -572,4 +582,5 @@ const shopCardStyle = {
   alignItems: "center",
   gap: 6,
   minWidth: 88,
+  boxShadow: "0 4px 10px rgba(35,58,30,0.06)",
 };
